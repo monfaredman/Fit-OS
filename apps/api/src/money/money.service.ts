@@ -6,7 +6,7 @@ import {
   type CreatePaymentBody,
   type WalletTopUpBody,
 } from '@gymos/contracts';
-import { recordPayment, walletTopUp } from '@gymos/core';
+import { jalaliYm, recordPayment, walletTopUp } from '@gymos/core';
 import { payment as paymentTable } from '@gymos/db';
 import { sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
@@ -15,6 +15,7 @@ import type { AuthUser } from '../auth/staff-auth.guard.js';
 import { drawerAccount, memberAccount, orgAccount } from '../infra/ledger-accounts.js';
 import { accountBalance, postTransaction } from '../infra/ledger-post.js';
 import { TenantDb, type Tx } from '../infra/tenant.db.js';
+import { computeVariance, describeVariance } from './drawer.js';
 import { decideReplay, expiresAt, hashRequest, type StoredResponse } from './idempotency.js';
 
 @Injectable()
@@ -229,6 +230,111 @@ export class MoneyService {
           list.length === query.limit ? String(list[list.length - 1]!.arrearsRial) : null,
       };
     });
+  }
+
+  /**
+   * The open shift: cash movements since the last close.
+   *
+   * Expected is derived from the ledger, never stored and never supplied by the
+   * person being measured — that is the whole control (design/permissions.md §2).
+   */
+  async drawerCurrent(user: AuthUser) {
+    return this.db.withOrg(user.orgId, async (tx) => {
+      const locationId = await this.primaryLocation(tx, user.orgId);
+      const since = await this.lastCloseAt(tx, user.orgId, locationId);
+      const expectedRial = await this.expectedCash(tx, user.orgId, locationId, since);
+      return {
+        locationId,
+        periodFrom: since.toISOString(),
+        expectedRial,
+        lastCloseAt: since.toISOString(),
+      };
+    });
+  }
+
+  /** Records the count. Append-only: a close is evidence, so it is never edited. */
+  async drawerClose(user: AuthUser, countedRial: number, note?: string) {
+    return this.db.withOrg(user.orgId, async (tx) => {
+      const locationId = await this.primaryLocation(tx, user.orgId);
+      const periodFrom = await this.lastCloseAt(tx, user.orgId, locationId);
+      const expectedRial = await this.expectedCash(tx, user.orgId, locationId, periodFrom);
+      const variance = computeVariance({ expectedRial, countedRial });
+      const periodTo = new Date();
+
+      const rows = await tx.execute<{ id: string }>(sql`
+        INSERT INTO drawer_close
+          (org_id, location_id, staff_id, period_from, period_to,
+           expected_rial, counted_rial, variance_rial, note, jalali_ym)
+        VALUES (${user.orgId}, ${locationId}, ${user.staffId},
+                ${periodFrom.toISOString()}, ${periodTo.toISOString()},
+                ${expectedRial}, ${countedRial}, ${variance.varianceRial},
+                ${note ?? null}, ${jalaliYm(periodTo)})
+        RETURNING id
+      `);
+
+      return {
+        id: (rows as unknown as { id: string }[])[0]!.id,
+        periodFrom: periodFrom.toISOString(),
+        periodTo: periodTo.toISOString(),
+        expectedRial,
+        countedRial,
+        ...variance,
+        message: describeVariance(variance),
+      };
+    });
+  }
+
+  /** Recent closes. Owner-visible, which is what makes the control real. */
+  async drawerHistory(user: AuthUser, limit = 30) {
+    return this.db.withOrg(user.orgId, async (tx) => {
+      const rows = await tx.execute(sql`
+        SELECT d.id, d.period_from AS "periodFrom", d.period_to AS "periodTo",
+               d.expected_rial::text AS "expectedRial", d.counted_rial::text AS "countedRial",
+               d.variance_rial::text AS "varianceRial", d.note,
+               s.first_name AS "firstName", s.last_name AS "lastName"
+          FROM drawer_close d LEFT JOIN staff s ON s.id = d.staff_id
+         ORDER BY d.period_to DESC LIMIT ${limit}
+      `);
+      return (rows as unknown as Record<string, unknown>[]).map((r) => ({
+        id: r.id as string,
+        periodFrom: new Date(r.periodFrom as string).toISOString(),
+        periodTo: new Date(r.periodTo as string).toISOString(),
+        expectedRial: Number(r.expectedRial),
+        countedRial: Number(r.countedRial),
+        varianceRial: Number(r.varianceRial),
+        note: (r.note as string | null) ?? null,
+        staff: r.firstName ? `${r.firstName} ${r.lastName}` : null,
+      }));
+    });
+  }
+
+  private async lastCloseAt(tx: Tx, orgId: string, locationId: string): Promise<Date> {
+    const rows = await tx.execute<{ periodTo: string }>(sql`
+      SELECT period_to AS "periodTo" FROM drawer_close
+       WHERE org_id = ${orgId} AND location_id = ${locationId}
+       ORDER BY period_to DESC LIMIT 1
+    `);
+    const last = (rows as unknown as { periodTo: string }[])[0];
+    // No close yet: the shift starts at midnight today, Tehran.
+    return last ? new Date(last.periodTo) : new Date(new Date().setHours(0, 0, 0, 0));
+  }
+
+  private async expectedCash(
+    tx: Tx,
+    orgId: string,
+    locationId: string,
+    since: Date,
+  ): Promise<number> {
+    const rows = await tx.execute<{ expected: string }>(sql`
+      SELECT COALESCE(SUM(CASE WHEN le.direction = 'debit' THEN le.amount_rial
+                               ELSE -le.amount_rial END), 0)::text AS expected
+        FROM ledger_entry le
+        JOIN ledger_account la ON la.id = le.account_id
+        JOIN ledger_transaction lt ON lt.id = le.transaction_id
+       WHERE la.kind = 'cash_drawer' AND la.location_id = ${locationId}
+         AND la.org_id = ${orgId} AND lt.occurred_at > ${since.toISOString()}
+    `);
+    return Number((rows as unknown as { expected: string }[])[0]?.expected ?? 0);
   }
 
   private async primaryLocation(tx: Tx, orgId: string): Promise<string> {

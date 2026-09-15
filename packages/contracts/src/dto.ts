@@ -220,6 +220,13 @@ export const arrearsSummaryDtoSchema = z.object({
 });
 export type ArrearsSummaryDto = z.infer<typeof arrearsSummaryDtoSchema>;
 
+export const drawerCloseBodySchema = z.object({
+  /** What the receptionist counted. The only figure staff supply. */
+  countedRial: rialSchema,
+  note: z.string().max(500).optional(),
+});
+export type DrawerCloseBody = z.infer<typeof drawerCloseBodySchema>;
+
 /* --------------------------------- check-in -------------------------------- */
 
 export const createCheckInBodySchema = z.object({

@@ -4,6 +4,7 @@ import {
   AppError,
   arrearsQuerySchema,
   createPaymentBodySchema,
+  drawerCloseBodySchema,
   walletTopUpBodySchema,
   type ArrearsSummaryDto,
 } from '@gymos/contracts';
@@ -54,6 +55,28 @@ export class MoneyController {
     const { result, replayed } = await this.money.topUpWallet(user, key, parsed);
     reply.header('Idempotency-Replayed', String(replayed));
     reply.status(201).send(result);
+  }
+
+  /** The open shift. Expected cash is derived from the ledger. */
+  @Get('drawer/current')
+  @RequireCapability('drawer.close')
+  drawerCurrent(@CurrentUser() user: AuthUser) {
+    return this.money.drawerCurrent(user);
+  }
+
+  /** Record the count. Append-only — a close is evidence, never edited. */
+  @Post('drawer/close')
+  @RequireCapability('drawer.close')
+  drawerClose(@CurrentUser() user: AuthUser, @Body() body: unknown) {
+    const parsed = drawerCloseBodySchema.parse(body);
+    return this.money.drawerClose(user, parsed.countedRial, parsed.note);
+  }
+
+  /** Owner-visible history. Visibility is what makes the control real. */
+  @Get('drawer/history')
+  @RequireCapability('drawer.variance.all')
+  drawerHistory(@CurrentUser() user: AuthUser) {
+    return this.money.drawerHistory(user);
   }
 
   @Get('people/:id/ledger')

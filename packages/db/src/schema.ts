@@ -850,6 +850,33 @@ export const importRow = pgTable(
   (t) => [index('import_row_batch_idx').on(t.batchId, t.status)],
 );
 
+/** Per-shift cash reconciliation. Expected is derived; only `counted` is entered. */
+export const drawerClose = pgTable(
+  'drawer_close',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    locationId: uuid('location_id')
+      .notNull()
+      .references(() => location.id, { onDelete: 'cascade' }),
+    staffId: uuid('staff_id').references(() => staff.id, { onDelete: 'set null' }),
+    periodFrom: ts('period_from').notNull(),
+    periodTo: ts('period_to').notNull(),
+    expectedRial: money('expected_rial').notNull(),
+    countedRial: money('counted_rial').notNull(),
+    varianceRial: money('variance_rial').notNull(),
+    note: text('note'),
+    jalaliYm: text('jalali_ym').notNull(),
+    createdAt: ts('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('drawer_close_org_period_idx').on(t.orgId, t.locationId, t.periodTo)],
+);
+
+export type DrawerClose = typeof drawerClose.$inferSelect;
+export type NewDrawerClose = typeof drawerClose.$inferInsert;
+
 /* ───────────────────────────── calendar & audit ───────────────────────────── */
 
 /** Iranian official holidays are irregular and announced — a table, not a constant. */
