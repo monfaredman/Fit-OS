@@ -66,6 +66,12 @@ const DAY = 86_400_000;
 /**
  * Tables carrying append-only triggers. Only these need suspending for an
  * administrative wipe — and only their USER triggers, never system triggers.
+ *
+ * Keep in sync with 0001_guards.sql and any later migration that adds one.
+ * Forgetting an entry makes the wipe fail loudly (the trigger rejects the
+ * cascade), which is the safe direction — but see `assertWipeListComplete`,
+ * which checks it against the database so the failure arrives as a clear
+ * message rather than a Postgres error.
  */
 const APPEND_ONLY_TABLES = [
   'ledger_entry',
@@ -73,11 +79,32 @@ const APPEND_ONLY_TABLES = [
   'stock_movement',
   'sms_credit_ledger',
   'audit_log',
+  'drawer_close',
 ] as const;
 
 /** Seeded staff password. Development only. */
 const DEV_PASSWORD = 'gymos1234';
 const T = (toman: number): number => toman * 10;
+
+/**
+ * Fail early and legibly if a migration added an append-only trigger that
+ * APPEND_ONLY_TABLES does not know about.
+ */
+async function assertWipeListComplete(db: ReturnType<typeof createDb>['db']): Promise<void> {
+  const rows = await db.execute(sql`
+    SELECT DISTINCT c.relname AS table_name
+      FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+     WHERE NOT t.tgisinternal AND t.tgname LIKE '%_immutable'
+  `);
+  const actual = (rows as unknown as { table_name: string }[]).map((r) => r.table_name);
+  const missing = actual.filter((t) => !(APPEND_ONLY_TABLES as readonly string[]).includes(t));
+  if (missing.length) {
+    throw new Error(
+      `APPEND_ONLY_TABLES is missing: ${missing.join(', ')}. ` +
+        'Add them, or the org wipe will fail when the trigger rejects the cascade.',
+    );
+  }
+}
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -86,6 +113,8 @@ async function main(): Promise<void> {
   const now = new Date();
 
   try {
+    await assertWipeListComplete(db);
+
     // ---- wipe just this org -------------------------------------------------
     const existing = await db
       .select({ id: s.organization.id })
@@ -310,7 +339,12 @@ async function main(): Promise<void> {
       else if (roll < 0.3) paidRial = 0; // nothing yet
 
       if (paidRial > 0) {
-        const paidAt = new Date(startsAt.getTime() + int(0, 3) * DAY);
+        // Clamp to now: `startsAt` can be today, and +0..3 days would date the
+        // payment in the future. Real gyms do not take tomorrow's cash, and a
+        // future-dated entry silently breaks any "since the last close" query.
+        const paidAt = new Date(
+          Math.min(startsAt.getTime() + int(0, 3) * DAY, now.getTime()),
+        );
         postings.push({
           type: 'payment',
           occurredAt: paidAt,

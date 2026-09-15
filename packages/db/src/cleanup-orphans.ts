@@ -19,12 +19,13 @@ const TABLES = [
   'ledger_entry', 'ledger_transaction', 'check_in', 'access_snapshot', 'payment',
   'membership_freeze', 'membership', 'ledger_account', 'risk_score', 'person',
   'plan', 'locker_assignment', 'locker', 'product', 'stock_movement',
-  'automation_run', 'automation', 'message', 'sms_credit_ledger',
+  'automation_run', 'automation', 'message', 'sms_credit_ledger', 'drawer_close',
   'scheduled_trigger', 'event', 'session', 'staff', 'audit_log', 'location',
 ] as const;
 
 const APPEND_ONLY = [
   'ledger_entry', 'check_in', 'stock_movement', 'sms_credit_ledger', 'audit_log',
+  'drawer_close',
 ] as const;
 
 async function main(): Promise<void> {

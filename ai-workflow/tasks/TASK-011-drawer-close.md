@@ -26,7 +26,7 @@ Pulled forward ahead of TASK-010 because it protects a real gym's money.
 - [x] Both directions reported — a surplus is as much a signal as a shortfall
 - [x] Persian message in Toman, framed as reconciliation not accusation
 - [x] `drawer_close` is append-only, RLS-scoped
-- [ ] **Post-close reset is wrong — see Unresolved**
+- [x] Post-close reset resets cleanly (was a seed bug — see Decisions)
 
 ## Relevant documentation
 
@@ -76,15 +76,32 @@ UPDATE drawer_close      → rejected, append-only
   `design/permissions.md` §2 is explicit that this is sold as "the drawer closes
   correctly every night" — Iranian gym owners often employ family.
 
+### The post-close reset bug — resolved, and it was not the drawer
+
+`drawer/current` reported a non-zero figure after a close. The drawer query was
+correct all along: the **seed** was dating payments in the future.
+`paidAt = startsAt + 0..3 days`, and when `startsAt` landed on today that put the
+payment up to three days ahead. Twenty such transactions sat permanently after
+any close boundary. `occurred_at` was 2026-09-16 while `created_at` was
+2026-09-15 — that one-line comparison is what gave it away.
+
+Two fixes, because either alone would leave a hole:
+- the seed clamps `paidAt` to `now()`; real gyms do not take tomorrow's cash
+- `expectedCash` adds `AND lt.occurred_at <= now()` — cash that has not arrived
+  cannot have been counted, whatever an import or a wrong device clock says
+
+### A new append-only table has to be registered in two places
+
+Adding `drawer_close` with an immutability trigger broke `pnpm db:seed`: the org
+wipe's cascade hit a trigger the wipe list did not know about. Same class as
+D-009. Rather than just add the entry, `seed.ts` now runs
+`assertWipeListComplete()`, which reads the `%_immutable` triggers out of
+`pg_trigger` and fails with a named list if `APPEND_ONLY_TABLES` is missing any.
+The next person to add an append-only table gets a sentence, not a Postgres
+error.
+
 ## Unresolved issues
 
-- **The post-close reset is wrong.** After closing, `drawer/current` reported
-  87,660,000 T rather than starting near zero. The figure *dropped* from
-  172,250,000, so the `period_to` boundary is partly taking effect but is not
-  filtering cleanly. Suspect the `occurred_at > since` comparison against
-  backdated seed transactions, or more than one `cash_drawer` account for the
-  same location. **Diagnose before this is used anywhere real** — a wrong
-  expected figure accuses the wrong person.
 - No per-shift boundary: the period is "since the last close", so two
   receptionists sharing a day are measured together. Needs a shift concept
   before the variance can be attributed to one person.
@@ -98,14 +115,16 @@ UPDATE drawer_close      → rejected, append-only
 ## Handoff notes
 
 - **From → To:** implementer → implementer
-- **Done:** variance computed, graded and recorded; RBAC and append-only verified
-- **Next:** fix the post-close reset, then TASK-010 Desk UI
-- **Risks:** the unresolved reset bug makes the expected figure untrustworthy
-  across shift boundaries. The single-shift case is correct.
+- **Done:** variance computed, graded, recorded and reset across shifts; RBAC and
+  append-only verified; the reset bug traced to the seed and fixed at both ends
+- **Next:** TASK-010 Desk UI
+- **Risks:** the period is still "since the last close", so two receptionists
+  sharing a day are measured together. Needs a shift concept before a variance
+  can be attributed to one person.
 
 ## Definition-of-done checklist
 
-- [ ] Acceptance criteria met — one outstanding
+- [x] Acceptance criteria met
 - [x] Relevant validation run
 - [x] Files changed listed
 - [x] Decisions/assumptions recorded

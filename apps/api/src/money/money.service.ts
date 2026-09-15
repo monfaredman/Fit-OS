@@ -332,7 +332,11 @@ export class MoneyService {
         JOIN ledger_account la ON la.id = le.account_id
         JOIN ledger_transaction lt ON lt.id = le.transaction_id
        WHERE la.kind = 'cash_drawer' AND la.location_id = ${locationId}
-         AND la.org_id = ${orgId} AND lt.occurred_at > ${since.toISOString()}
+         AND la.org_id = ${orgId}
+         AND lt.occurred_at >  ${since.toISOString()}
+         -- Cash that has not arrived yet cannot have been counted. Guards
+         -- against future-dated entries from an import or a wrong clock.
+         AND lt.occurred_at <= now()
     `);
     return Number((rows as unknown as { expected: string }[])[0]?.expected ?? 0);
   }
