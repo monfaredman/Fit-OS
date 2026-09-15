@@ -2,7 +2,9 @@
   "name": "gymos",
   "private": true,
   "packageManager": "pnpm@9.0.0",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -13,7 +15,8 @@
     "db:migrate": "pnpm --filter @gymos/db db:migrate",
     "db:seed": "pnpm --filter @gymos/db db:seed",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,json,md}\"",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:cleanup": "pnpm --filter @gymos/db db:cleanup"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",

@@ -6,8 +6,14 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./schema": { "types": "./dist/schema.d.ts", "import": "./dist/schema.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -18,7 +24,8 @@
     "clean": "rm -rf dist .turbo",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/migrate.ts",
-    "db:seed": "tsx src/seed.ts"
+    "db:seed": "tsx src/seed.ts",
+    "db:cleanup": "tsx src/cleanup-orphans.ts"
   },
   "dependencies": {
     "@gymos/config": "workspace:*",
