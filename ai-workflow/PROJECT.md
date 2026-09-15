@@ -21,11 +21,11 @@ Do not invent ports, commands, APIs, or status. Mark unknowns as **VERIFY**.
 pnpm workspace + Turborepo. Package names: `@gymos/<name>`.
 
 ```
-apps/api          NestJS 12 + Fastify (REST, Swagger /docs)
+apps/api          NestJS 11 + Fastify (REST, Swagger /docs)
 apps/web          Next.js 16 (Desk, owner, member portal)      [scaffold]
 packages/core     money · jalali · ledger — framework-free, 94 tests
 packages/db       Drizzle schema · migrations · guards · seed
-packages/contracts Zod schemas shared api ↔ web
+packages/contracts Zod schemas + error catalogue, shared api ↔ web
 packages/config   env loading + zod validation
 ```
 
