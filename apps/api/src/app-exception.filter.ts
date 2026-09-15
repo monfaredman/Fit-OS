@@ -1,6 +1,15 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
-import { AppError } from '@gymos/contracts';
+import { AppError, ERRORS, type ErrorCode } from '@gymos/contracts';
 import { getLogger } from './logging/logger.js';
+
+/** Nest throws framework exceptions; these are the ones users can actually hit. */
+const HTTP_STATUS_TO_CODE: Record<number, ErrorCode | undefined> = {
+  400: 'VALIDATION_ERROR',
+  401: 'UNAUTHENTICATED',
+  403: 'FORBIDDEN',
+  404: 'NOT_FOUND',
+  429: 'RATE_LIMITED',
+};
 
 interface ReplyLike {
   status(code: number): ReplyLike;
@@ -28,16 +37,21 @@ export class AppExceptionFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
+      // Map Nest's built-in exceptions onto the catalogue so the user never
+      // sees an English framework string. design/api-design.md §3.
+      const mapped = HTTP_STATUS_TO_CODE[status];
+      if (mapped) {
+        reply.status(status).send({ error: { code: mapped, message: ERRORS[mapped].message } });
+        return;
+      }
       const body = exception.getResponse();
       reply.status(status).send({
         error: {
-          code: status === 404 ? 'NOT_FOUND' : 'HTTP_ERROR',
+          code: 'HTTP_ERROR',
           message:
-            status === 404
-              ? 'یافت نشد.'
-              : typeof body === 'string'
-                ? body
-                : ((body as { message?: string }).message ?? 'خطایی رخ داد.'),
+            typeof body === 'string'
+              ? body
+              : ((body as { message?: string }).message ?? 'خطایی رخ داد.'),
         },
       });
       return;

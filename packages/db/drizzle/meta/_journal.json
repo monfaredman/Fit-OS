@@ -15,6 +15,13 @@
       "when": 1789454069103,
       "tag": "0001_guards",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789454070103,
+      "tag": "0002_auth_functions",
+      "breakpoints": true
     }
   ]
 }

@@ -31,6 +31,7 @@ import {
   jalaliYm,
   addDays,
   formatTomanLatin,
+  hashPassword,
   normalizePersianText,
   type Transaction,
 } from '@gymos/core';
@@ -38,6 +39,7 @@ import { randomUUID } from 'node:crypto';
 import { eq, sql } from 'drizzle-orm';
 import { createDb } from './client.js';
 import * as s from './schema.js';
+import * as s2 from './schema.js';
 import {
   DISCIPLINES,
   FEMALE_FIRST,
@@ -61,6 +63,20 @@ const int = (min: number, max: number): number => min + Math.floor(rnd() * (max 
 const chance = (p: number): boolean => rnd() < p;
 
 const DAY = 86_400_000;
+/**
+ * Tables carrying append-only triggers. Only these need suspending for an
+ * administrative wipe — and only their USER triggers, never system triggers.
+ */
+const APPEND_ONLY_TABLES = [
+  'ledger_entry',
+  'check_in',
+  'stock_movement',
+  'sms_credit_ledger',
+  'audit_log',
+] as const;
+
+/** Seeded staff password. Development only. */
+const DEV_PASSWORD = 'gymos1234';
 const T = (toman: number): number => toman * 10;
 
 async function main(): Promise<void> {
@@ -78,16 +94,24 @@ async function main(): Promise<void> {
       .limit(1);
     if (existing[0]) {
       // The append-only triggers reject the cascade DELETE on check_in,
-      // ledger_entry and audit_log — correctly: append-only means append-only,
-      // even for a cascade. `session_replication_role = replica` suspends user
-      // triggers for this transaction only. It is the right tool for an
-      // administrative wipe, and deliberately NOT available to the API, which
-      // connects as gymos_app and has no privilege to set it.
+      // ledger_entry and audit_log — correctly: append-only means append-only.
+      //
+      // `session_replication_role = replica` looks like the fix and is a TRAP:
+      // it disables *system* triggers too, which is how Postgres implements
+      // foreign keys. The parent row goes away and every child is silently
+      // orphaned. `DISABLE TRIGGER USER` suspends only our own triggers and
+      // leaves FK cascades working. ALTER TABLE is transactional, so a failure
+      // rolls the disable back with everything else.
       await db.transaction(async (tx) => {
-        await tx.execute(sql`SET LOCAL session_replication_role = replica`);
-        await tx.delete(s.organization).where(eq(s.organization.id, existing[0]!.id));
+        for (const t of APPEND_ONLY_TABLES) {
+          await tx.execute(sql.raw(`ALTER TABLE ${t} DISABLE TRIGGER USER`));
+        }
+        await tx.delete(s2.organization).where(eq(s2.organization.id, existing[0]!.id));
+        for (const t of APPEND_ONLY_TABLES) {
+          await tx.execute(sql.raw(`ALTER TABLE ${t} ENABLE TRIGGER USER`));
+        }
       });
-      console.log('Removed previous seed org (cascade, triggers suspended).');
+      console.log('Removed previous seed org (cascade intact, user triggers suspended).');
     }
 
     // ---- org, location, staff ----------------------------------------------
@@ -118,7 +142,11 @@ async function main(): Promise<void> {
       { role: 'receptionist', firstName: 'زهرا', lastName: 'نوری', mobile: '9123333333' },
       { role: 'trainer', firstName: 'آرش', lastName: 'بهرامی', mobile: '9124444444' },
     ].map((x) => ({ id: randomUUID(), orgId, ...x, isActive: true }));
-    await db.insert(s.staff).values(staffRows);
+
+    // Development password for every seeded staff member. Never used outside
+    // the seed — production accounts are created through the API.
+    const devPasswordHash = await hashPassword(DEV_PASSWORD);
+    await db.insert(s.staff).values(staffRows.map((x) => ({ ...x, passwordHash: devPasswordHash })));
     await db.insert(s.staffLocation).values(staffRows.map((x) => ({ staffId: x.id, locationId })));
     const receptionistId = staffRows[2]!.id;
 
@@ -476,7 +504,8 @@ async function main(): Promise<void> {
     console.log(`  total arrears    ${formatTomanLatin(totalRial)} Toman`);
     console.log(`  ledger balance   ${imbalance === 0 ? 'balanced ✓' : 'UNBALANCED'}`);
     console.log('');
-    console.log(`  receptionist login: 09123333333`);
+    console.log(`  login: 09123333333 / ${DEV_PASSWORD}  (receptionist)`);
+    console.log(`         09121111111 / ${DEV_PASSWORD}  (owner)`);
   } finally {
     await close();
   }

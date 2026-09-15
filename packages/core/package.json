@@ -7,10 +7,26 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./money": { "types": "./dist/money.d.ts", "import": "./dist/money.js" },
-    "./jalali": { "types": "./dist/jalali.d.ts", "import": "./dist/jalali.js" },
-    "./ledger": { "types": "./dist/ledger.d.ts", "import": "./dist/ledger.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./money": {
+      "types": "./dist/money.d.ts",
+      "import": "./dist/money.js"
+    },
+    "./jalali": {
+      "types": "./dist/jalali.d.ts",
+      "import": "./dist/jalali.js"
+    },
+    "./ledger": {
+      "types": "./dist/ledger.d.ts",
+      "import": "./dist/ledger.js"
+    },
+    "./password": {
+      "types": "./dist/password.d.ts",
+      "import": "./dist/password.js"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -24,6 +40,7 @@
     "jalaali-js": "^1.2.8"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
   }
