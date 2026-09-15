@@ -5,7 +5,7 @@ import { session as sessionTable } from '@gymos/db';
 import { and, eq, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { TenantDb } from '../infra/tenant.db.js';
-import { generateSessionToken, verifyPassword } from '@gymos/core';
+import { generateSessionToken, verifyPassword } from '@gymos/core/password';
 import { RateLimiter } from './rate-limit.js';
 import { hashToken } from './staff-auth.guard.js';
 

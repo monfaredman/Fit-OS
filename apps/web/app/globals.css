@@ -1,0 +1,41 @@
+@import 'tailwindcss';
+
+/*
+ * Tailwind v4 is CSS-first: the theme lives here, not in a JS config.
+ * v4 emits logical properties (ms-*, pe-*) by default, which is most of the
+ * RTL battle — `dir="rtl"` on <html> then mostly just works.
+ */
+@theme {
+  --color-ink: #16201f;
+  --color-muted: #697a77;
+  --color-line: #d2dad8;
+  --color-surface: #ffffff;
+  --color-ground: #f1f4f3;
+  --color-accent: #0c7a80;
+  --color-ok: #2f6b45;
+  --color-warn: #8e6408;
+  --color-danger: #a43a22;
+
+  --font-sans: Vazirmatn, 'IBM Plex Sans Arabic', Tahoma, system-ui, sans-serif;
+}
+
+/*
+ * Vazirmatn is vendored, not fetched: Google Fonts may be unreachable from
+ * Iran (design/tech-stack.md §7). Falls back to Tahoma, which every Windows
+ * reception PC already has.
+ */
+
+html { background: var(--color-ground); color: var(--color-ink); }
+body { font-family: var(--font-sans); }
+
+/*
+ * Amounts and dates run left-to-right INSIDE the RTL layout. A number mirrored
+ * by the bidi algorithm is a bug users cannot articulate but will not trust.
+ */
+.ltr-num { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+
+/* The search box keeps focus; make that visible rather than surprising. */
+input:focus-visible, button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

@@ -31,10 +31,10 @@ import {
   jalaliYm,
   addDays,
   formatTomanLatin,
-  hashPassword,
   normalizePersianText,
   type Transaction,
 } from '@gymos/core';
+import { hashPassword } from '@gymos/core/password';
 import { randomUUID } from 'node:crypto';
 import { eq, sql } from 'drizzle-orm';
 import { createDb } from './client.js';
