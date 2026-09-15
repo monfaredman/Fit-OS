@@ -189,9 +189,15 @@ export class PeopleService {
       // and the index move together.
       if (clash[0]) throw new AppError('DUPLICATE_MOBILE');
 
+      const loc = await tx.execute<{ id: string }>(sql`
+        SELECT id FROM location WHERE org_id = ${user.orgId} AND deleted_at IS NULL
+         ORDER BY is_primary DESC, created_at LIMIT 1
+      `);
+
       await tx.insert(personTable).values({
         id,
         orgId: user.orgId,
+        homeLocationId: (loc as unknown as { id: string }[])[0]?.id ?? null,
         firstName: body.firstName,
         lastName: body.lastName,
         mobile: body.mobile,
