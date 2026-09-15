@@ -46,9 +46,18 @@ export class AccessSnapshotService {
         FROM person p
         JOIN organization o ON o.id = p.org_id
         LEFT JOIN LATERAL (
+               -- 'expired' is included deliberately. Dropping it would make a
+               -- lapsed member indistinguishable from someone who never joined,
+               -- so decideAccess could only ever say no_membership -- which
+               -- sends the receptionist toward signup instead of renewal.
+               -- Ordering puts a live membership ahead of a lapsed one.
+               -- NOTE: no backticks in SQL comments here. This string is a JS
+               -- template literal, and a backtick terminates it.
                SELECT * FROM membership mm
-                WHERE mm.person_id = p.id AND mm.status IN ('active', 'frozen')
-                ORDER BY mm.ends_at DESC NULLS LAST LIMIT 1
+                WHERE mm.person_id = p.id
+                  AND mm.status IN ('active', 'frozen', 'expired')
+                ORDER BY (mm.status = 'expired'), mm.ends_at DESC NULLS LAST
+                LIMIT 1
              ) m ON true
         LEFT JOIN v_member_arrears v ON v.person_id = p.id
        WHERE p.id = ${personId}
