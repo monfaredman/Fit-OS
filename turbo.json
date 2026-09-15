@@ -1,0 +1,19 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [".env"],
+  "globalEnv": [
+    "NODE_ENV", "LOG_LEVEL", "PORT", "WEB_ORIGIN",
+    "DATABASE_URL", "DATABASE_APP_URL", "REDIS_URL",
+    "SESSION_SECRET", "SESSION_TTL_DAYS", "DEFAULT_TIMEZONE",
+    "ARREARS_GRACE_RIAL", "DISCOUNT_MAX_PCT", "WRITEOFF_MAX_RIAL",
+    "SEED_ORG_NAME", "SEED_MEMBER_COUNT", "USE_FIXTURES"
+  ],
+  "tasks": {
+    "build":     { "dependsOn": ["^build"], "outputs": ["dist/**", ".next/**", "!.next/cache/**"] },
+    "dev":       { "cache": false, "persistent": true },
+    "lint":      { "dependsOn": ["^build"] },
+    "typecheck": { "dependsOn": ["^build"] },
+    "test":      { "dependsOn": ["^build"] },
+    "clean":     { "cache": false }
+  }
+}

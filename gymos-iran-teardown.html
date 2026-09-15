@@ -1,0 +1,935 @@
+<title>GymOS Iran Teardown</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+:root{
+  --ground:#F1F4F3; --surface:#FFFFFF; --surface-2:#E7ECEA; --sunk:#DDE4E2;
+  --ink:#131A19; --ink-2:#3B4947; --muted:#697A77; --line:#D2DAD8; --line-2:#C0CAC7;
+  --accent:#0C7A80; --accent-ink:#075A5F; --accent-soft:#DAECEC;
+  --danger:#A43A22; --danger-soft:#F6E1DA;
+  --warn:#8E6408; --warn-soft:#F4EACD;
+  --good:#2F6B45; --good-soft:#DCEBE0;
+  --shadow:0 1px 2px rgba(19,26,25,.06), 0 8px 24px -16px rgba(19,26,25,.22);
+  --f-display:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --f-body:"IBM Plex Sans","IBM Plex Sans Arabic",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --f-fa:"IBM Plex Sans Arabic","IBM Plex Sans",Tahoma,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#101615; --surface:#161E1D; --surface-2:#1D2625; --sunk:#0B1010;
+    --ink:#E3EAE8; --ink-2:#B4C1BE; --muted:#879794; --line:#2A3433; --line-2:#374341;
+    --accent:#46BFC1; --accent-ink:#7FD6D7; --accent-soft:#10302F;
+    --danger:#E27C60; --danger-soft:#33201A;
+    --warn:#D9A742; --warn-soft:#2D2514;
+    --good:#69B884; --good-soft:#15291D;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.7);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101615; --surface:#161E1D; --surface-2:#1D2625; --sunk:#0B1010;
+  --ink:#E3EAE8; --ink-2:#B4C1BE; --muted:#879794; --line:#2A3433; --line-2:#374341;
+  --accent:#46BFC1; --accent-ink:#7FD6D7; --accent-soft:#10302F;
+  --danger:#E27C60; --danger-soft:#33201A;
+  --warn:#D9A742; --warn-soft:#2D2514;
+  --good:#69B884; --good-soft:#15291D;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.7);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:var(--f-body); font-size:16px; line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+  margin:0; padding-inline:20px; padding-block:0 96px;
+}
+.wrap{max-width:920px;margin:0 auto}
+.prose{max-width:68ch}
+h1,h2,h3,h4{text-wrap:balance;margin:0}
+a{color:var(--accent-ink);text-underline-offset:2px;text-decoration-thickness:.06em}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+fa,.fa{font-family:var(--f-fa);font-feature-settings:"kern"}
+.fa{direction:rtl;unicode-bidi:isolate;display:inline-block}
+
+/* masthead */
+header.mast{padding-block:56px 36px;border-bottom:1px solid var(--line)}
+.kicker{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(44px,8vw,78px);line-height:.98;letter-spacing:-.01em;margin-block:18px 0}
+h1 em{font-style:italic;color:var(--accent)}
+.dek{font-size:19px;line-height:1.5;color:var(--ink-2);max-width:58ch;margin-top:20px}
+.dek b{color:var(--ink);font-weight:600}
+
+/* verdict block */
+.verdict{
+  margin-top:34px;border:1.5px solid var(--accent);background:var(--accent-soft);
+  padding:22px 24px;display:grid;gap:14px;
+}
+.verdict .stamp{font-family:var(--f-mono);font-weight:600;font-size:clamp(22px,4.4vw,32px);letter-spacing:-.01em;color:var(--accent-ink);line-height:1.1}
+.verdict p{margin:0;color:var(--ink-2);font-size:15.5px;max-width:62ch}
+
+/* sections */
+section{padding-block:46px;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+.snum{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.14em;color:var(--accent);text-transform:uppercase;display:block;margin-bottom:10px}
+h2{font-family:var(--f-display);font-weight:400;font-size:clamp(28px,4.6vw,40px);line-height:1.1;letter-spacing:-.01em}
+h3{font-size:17px;font-weight:600;letter-spacing:-.005em;margin-top:30px;margin-bottom:8px}
+h4{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:26px;margin-bottom:8px}
+p{margin-block:0 14px}
+section > p:first-of-type, .lede{font-size:17px;color:var(--ink-2)}
+ul,ol{margin-block:0 16px;padding-inline-start:20px}
+li{margin-bottom:7px}
+li::marker{color:var(--muted)}
+strong{font-weight:600}
+
+/* chips */
+.chip{display:inline-block;font-family:var(--f-mono);font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border:1px solid;white-space:nowrap;line-height:1.5;vertical-align:.06em}
+.c-p0{color:var(--danger);border-color:var(--danger);background:var(--danger-soft)}
+.c-p1{color:var(--warn);border-color:var(--warn);background:var(--warn-soft)}
+.c-p2{color:var(--muted);border-color:var(--line-2);background:var(--surface-2)}
+.c-p3{color:var(--muted);border-color:var(--line);background:transparent}
+.c-cut{color:var(--ink);border-color:var(--ink);background:transparent;text-decoration:line-through;text-decoration-thickness:1px}
+.c-keep{color:var(--good);border-color:var(--good);background:var(--good-soft)}
+.c-acc{color:var(--accent-ink);border-color:var(--accent);background:var(--accent-soft)}
+
+/* evidence tags */
+.tag{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;padding:1px 5px;border-radius:2px;white-space:nowrap}
+.t-fact{color:var(--good);background:var(--good-soft)}
+.t-obs{color:var(--accent-ink);background:var(--accent-soft)}
+.t-asm{color:var(--warn);background:var(--warn-soft)}
+.t-rec{color:var(--danger);background:var(--danger-soft)}
+
+/* tables */
+.scroll{overflow-x:auto;margin-block:18px 22px;border:1px solid var(--line);background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:660px;font-size:13.5px}
+thead th{
+  position:sticky;top:0;background:var(--surface-2);text-align:left;
+  font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  font-weight:600;color:var(--ink-2);padding:10px 12px;border-bottom:1px solid var(--line-2);white-space:nowrap
+}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.45}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:nth-child(even){background:color-mix(in srgb,var(--surface-2) 42%,transparent)}
+td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.nm{font-weight:600;white-space:nowrap}
+.tnote{font-size:12.5px;color:var(--muted);margin-top:-10px;margin-bottom:24px;max-width:70ch}
+
+/* callout */
+.call{border-left:3px solid var(--accent);background:var(--surface);padding:16px 18px;margin-block:22px;box-shadow:var(--shadow)}
+.call.warn{border-left-color:var(--danger)}
+.call p:last-child{margin-bottom:0}
+.call .lab{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600;display:block;margin-bottom:6px}
+.call.warn .lab{color:var(--danger)}
+
+/* correction cards */
+.corr{display:grid;gap:0;border:1px solid var(--line);background:var(--surface);margin-block:20px}
+.corr > div{padding:18px 20px;border-bottom:1px solid var(--line)}
+.corr > div:last-child{border-bottom:0}
+.corr .was{font-size:13.5px;color:var(--muted)}
+.corr .was b{color:var(--ink-2);font-weight:600}
+.corr h3{margin-top:0;margin-bottom:6px;font-size:16.5px}
+.corr p:last-child{margin-bottom:0}
+
+/* two col */
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:0;border:1px solid var(--line);background:var(--surface);margin-block:20px}
+.cols > div{padding:20px}
+.cols > div + div{border-left:1px solid var(--line)}
+@media (max-width:620px){.cols > div + div{border-left:0;border-top:1px solid var(--line)}}
+.cols h4{margin-top:0}
+.cols ul{margin-bottom:0;font-size:14.5px}
+
+/* stat row */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-block:22px}
+.stats div{background:var(--surface);padding:16px 18px}
+.stats .v{font-family:var(--f-mono);font-size:24px;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--accent-ink);line-height:1.15}
+.stats .k{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.35}
+
+/* timeline */
+.tl{border-top:1px solid var(--line)}
+.tl > div{display:grid;grid-template-columns:76px 1fr;gap:20px;padding-block:20px;border-bottom:1px solid var(--line)}
+.tl .when{font-family:var(--f-mono);font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--accent);padding-top:2px}
+.tl ul{margin-bottom:0}
+@media (max-width:560px){.tl > div{grid-template-columns:1fr;gap:6px}}
+
+footer{padding-block:40px 0;color:var(--muted);font-size:13px}
+footer a{color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div class="kicker">
+    <span>Competitive &amp; Business Teardown</span>
+    <span>Iran &middot; <span class="fa">۱۴۰۴</span>–<span class="fa">۱۴۰۵</span></span>
+    <span>Sept 2026</span>
+  </div>
+  <h1>GymOS:<br>the case <em>against</em><br>your own brief</h1>
+  <p class="dek">You asked for the strongest version of GymOS that could realistically win in Iran — and whether it is worth building at all. The research says <b>yes, but almost none of the differentiation you proposed is the differentiation that will work.</b> The AI layer is not the wedge. The money is.</p>
+
+  <div class="verdict">
+    <div class="stamp">GO &mdash; WITH CHANGES</div>
+    <p>Build it. But change the wedge from <em>intelligence</em> to <em>collection</em>, change the beachhead from small gyms to mid-size gyms that already pay for software, kill the free tier, price <em>above</em> the incumbent rather than below, and plan from day one for the fact that Iran-only gym SaaS has a hard revenue ceiling of roughly <b><span class="fa">۳۰</span>–<span class="fa">۴۰</span> billion Toman ARR</b> even in the aggressive case.</p>
+  </div>
+</header>
+
+<section id="corrections">
+  <span class="snum">01 / What the research changed</span>
+  <h2>Five premises in the brief are wrong</h2>
+  <p class="lede">These are the findings that should reorder the whole roadmap. Each is sourced in the <a href="#evidence">evidence ledger</a>.</p>
+
+  <div class="corr">
+    <div>
+      <p class="was"><b>Brief assumed:</b> Iranian competitors are Gymona, Dambel, IranBadan, Jimina, Nexoura.</p>
+      <h3>Three of those five are not your competitors, and the real incumbents aren't on your list</h3>
+      <p><span class="tag t-fact">Fact</span> <b>Dambel</b> (dambel.app) is a B2C fitness-content app with an equipment store. <b>IranBadan</b> and <b>Gymina</b> (<span class="fa">جیمینا</span>, gymina.ir) are trainer-facing workout/nutrition <em>program-design</em> platforms. <b>Nexoura</b> returns nothing in either language. None manage a gym's members, money, or door.</p>
+      <p>The actual market leaders are desktop, perpetual-licence, hardware-bundled Windows software: <b>Parsian GMS</b> (<span class="fa">پارسیان</span>, claims 20+ years and 1,000+ clubs), <b>Tanasob / Pendar Pardaz</b> (<span class="fa">تناسب</span>, claims 546 clubs, in market since <span class="fa">۱۳۸۴</span>), <b>My-Gym</b>, <b>BodySoft / Etemad Pardaz</b>, <b>Zaman Pardaz</b>, <b>Antus</b>, <b>Bashgah-Yar</b>. You were benchmarking against the wrong tier.</p>
+    </div>
+    <div>
+      <p class="was"><b>Brief assumed:</b> Gymona is a peer to beat on features and undercut on price.</p>
+      <h3>Gymona has already shipped your entire Layer 1 — and prices above your hypothesis</h3>
+      <p><span class="tag t-fact">Fact</span> gymona.ir is live web SaaS with published Toman pricing: <b><span class="fa">۱٬۴۹۰٬۰۰۰</span></b> (to 150 athletes) / <b><span class="fa">۲٬۴۹۰٬۰۰۰</span></b> (to 600) / <b><span class="fa">۴٬۴۹۰٬۰۰۰</span></b> (to 2,000) Toman per month, annual at 10× monthly, 10-day free demo. It already has QR check-in with no app or scanner, locker management (public + VIP), member portal, multi-branch, trainer settlement, workout/nutrition programs, and attendance-device integration on its top tier.</p>
+      <p>Your price hypothesis (1M / 2M / 3.5M) undercuts them by roughly 30%. <span class="tag t-rec">Recommendation</span> Do not. You would be starting a price war against an equal-cost competitor while the real incumbent sells a <em>one-time</em> 5.5M-Toman licence. You lose both flanks. Layer 1 is now table stakes, not a product.</p>
+    </div>
+    <div>
+      <p class="was"><b>Brief assumed:</b> Iranian access-control hardware is one of ~20 localization line items.</p>
+      <h3>Hardware compatibility is the single largest switching barrier in this market</h3>
+      <p><span class="tag t-fact">Fact</span> Every serious Iranian incumbent sells the software as an attachment to hardware: fingerprint readers, face recognition, turnstile gates (<span class="fa">گیت</span>), online locker locks (<span class="fa">قفل کمد آنلاین</span>), card printers, wristbands, POS terminals, even parking barriers. Parsian licenses in "phases" (<span class="fa">فاز</span>) — you buy modules, not a subscription.</p>
+      <p>A gym that has spent tens of millions of Toman on a turnstile wired to a reception-desk Windows box <em>cannot</em> switch to cloud software that doesn't speak to it. <span class="tag t-rec">Recommendation</span> A local hardware bridge agent — a small Windows/Linux service that reads the existing controller and syncs to GymOS — is not a P2 integration. It is <b>P0, and it is your entire go-to-market unlock.</b></p>
+    </div>
+    <div>
+      <p class="was"><b>Brief assumed:</b> Class booking, scheduling and classes are core Layer 1.</p>
+      <h3>Iranian gyms are open-floor, not class-based — the global feature set doesn't transfer</h3>
+      <p><span class="tag t-obs">Observed</span> Mindbody, Glofox, TeamUp, PushPress and Zen Planner are all built around the class-pack / booking model. The dominant Iranian format is monthly or session-count tuition (<span class="fa">شهریه</span>) on an open training floor, with gendered time blocks rather than bookable classes. Every Iranian vendor's feature list leads with tuition, debt (<span class="fa">بدهی</span>), entry-blocking for arrears, lockers, and buffet — not with booking.</p>
+      <p><span class="tag t-rec">Recommendation</span> Demote booking to P1 (it matters for women's sessions, pool lanes, TRX/yoga/pilates). Promote tuition + arrears + locker + buffet wallet to P0. Copying the global feature hierarchy into Iran is the most likely way to build a product nobody recognizes.</p>
+    </div>
+    <div>
+      <p class="was"><b>Brief assumed:</b> WhatsApp / Telegram messaging and Instagram-oriented acquisition are usable channels.</p>
+      <h3>SMS is the only channel you can build a product promise on</h3>
+      <p><span class="tag t-fact">Fact</span> Telegram remains filtered as of <span class="fa">۱۴۰۴</span>, with unblocking repeatedly announced and repeatedly denied. WhatsApp was unblocked in <span class="fa">دی ۱۴۰۳</span> but that decision was publicly contested during <span class="fa">تیر ۱۴۰۴</span>. Instagram remains filtered and is documented as damaging to business.</p>
+      <p><span class="tag t-rec">Recommendation</span> Build the messaging layer as SMS-first and channel-abstracted. Never let a retention promise depend on a filterable transport. Treat WhatsApp/Telegram as opportunistic adapters behind the same interface. Note that SMS credit resale is already a monetized line item in this market — My-Gym sells top-ups at <span class="fa">۲۴۸٬۰۰۰</span> Toman.</p>
+    </div>
+  </div>
+</section>
+
+<section id="wedge">
+  <span class="snum">02 / The wedge</span>
+  <h2>Your differentiator is money movement, not intelligence</h2>
+  <p class="lede">The most valuable thing I found isn't in your feature list at all.</p>
+
+  <p><span class="tag t-obs">Observed</span> Read the Iranian vendor pages closely and one feature appears in <em>every single one</em>: blocking entry for members with overdue tuition. Parsian, My-Gym, Smart Kerman, Zaman Pardaz, Antus — all of them ship a debtor list and a door that refuses arrears. That is not a feature. That is a symptom. It tells you unpaid dues are endemic, that Iranian gyms run on cash and card-to-card transfers, and that every gym owner in the country is personally chasing money every month.</p>
+
+  <p><span class="tag t-fact">Fact</span> Zarinpal operates a licensed <span class="fa">پرداخت مستقیم</span> (direct debit) product under Shaparak supervision, explicitly positioned for recurring subscription and instalment collection with customer-authorized withdrawal limits.</p>
+
+  <div class="call">
+    <span class="lab">The thesis</span>
+    <p><b>GymOS is the first Iranian gym platform where the member's membership renews itself.</b> Direct-debit mandates on signup, automatic monthly collection, retry logic, dunning by SMS, and a reconciliation ledger the owner can trust. Everything else in the product — attendance, lockers, buffet, programs — is the context that makes the collection legitimate.</p>
+    <p>This reframes the entire pitch. You stop selling software, which Iranian gym owners already own and resent paying for again. You start selling <em>recovered revenue</em>, which is denominated in the same Toman as their own P&amp;L.</p>
+  </div>
+
+  <h3>Why this is the right wedge and AI is not</h3>
+  <ul>
+    <li><b>It is measurable in the customer's currency.</b> "GymOS costs <span class="fa">۲٬۹۰۰٬۰۰۰</span> a month and collected <span class="fa">۴۱٬۰۰۰٬۰۰۰</span> in dues you'd have chased by phone" is a closeable sentence. "Our AI predicts churn" is not.</li>
+    <li><b>It is a real moat.</b> Once member payment mandates live in your system, switching means re-authorizing every member. That is a genuine switching cost — unlike data, which exports, and unlike AI, which commoditizes every six months.</li>
+    <li><b>It is defensible against the incumbents.</b> A desktop software shop with a hardware installation business will not do PSP/Shaparak integration, KYC, settlement reconciliation, and the regulatory relationship. It is unglamorous, slow, and exactly the kind of work that protects you.</li>
+    <li><b>It unlocks a second revenue line.</b> A take-rate on collected member dues eventually exceeds subscription revenue — which matters enormously given the ceiling problem in <a href="#ceiling">§15</a>.</li>
+    <li><b>AI does none of this.</b> 1club is already AI-native with agents, MCP, dynamic pricing and a copilot, and it is priced at $63–$239/month competing on cost against Gymdesk. AI has not given them pricing power. It will not give you any either.</li>
+  </ul>
+
+  <div class="call warn">
+    <span class="lab">Risk on the wedge</span>
+    <p>Direct debit is the highest-value and highest-risk item in this plan. It requires a PSP or <span class="fa">پرداخت‌یاری</span> relationship, mandate UX that Iranian consumers will actually accept, and handling of failed collections in a volatile-liquidity economy. <b>Validate this before writing product code</b> — it is the first item in the 7-day plan. If direct debit turns out to be unobtainable for your entity, the whole strategy reverts to a feature-parity fight with Gymona and the recommendation weakens to a marginal GO.</p>
+  </div>
+</section>
+
+<section id="landscape">
+  <span class="snum">03 / Competitive reality</span>
+  <h2>A two-tier market, and only one tier has your customers</h2>
+  <p class="lede">Iran's gym software market is split between a large installed base of desktop/hardware vendors and a thin, new layer of web SaaS. Almost all the revenue is in the first tier. Almost all the dissatisfaction is too.</p>
+
+  <h4>Tier 1 — the incumbents (desktop, perpetual licence, hardware-led)</h4>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Vendor</th><th>Model</th><th>Published price</th><th>Scale claimed</th><th>Strength</th><th>Exploitable weakness</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">Parsian GMS<br><span class="fa" style="font-weight:400;color:var(--muted)">پارسیان</span></td><td>Desktop, modular "phases"</td><td>None published</td><td>20+ yrs, 1,000+ clubs</td><td>Deepest hardware stack: gate, locker, card printer, parking, POS. Phone support relationship.</td><td>No cloud, no mobile, no member portal, no API. Owner cannot see the gym from their phone.</td></tr>
+      <tr><td class="nm">Tanasob<br><span class="fa" style="font-weight:400;color:var(--muted)">تناسب / پندارپرداز</span></td><td>Desktop, free base tier</td><td>None published</td><td>546 clubs, since <span class="fa">۱۳۸۴</span></td><td>Longest incumbency; free entry version seeds the base.</td><td>Same ceiling — local install, no recurring member billing.</td></tr>
+      <tr><td class="nm">My-Gym</td><td>Windows app + cloud store; early web app</td><td><b><span class="fa">۵٬۵۰۰٬۰۰۰</span></b> Toman one-time (from <span class="fa">۶٬۰۰۰٬۰۰۰</span>) + <span class="fa">۲۴۸٬۰۰۰</span> SMS credit</td><td>n/d</td><td>Sets the price anchor in the whole market. Free install, training, AnyDesk support.</td><td>Web app covers buffet only. No mobile app. No member limits published — no expansion revenue.</td></tr>
+      <tr><td class="nm">BodySoft<br><span class="fa" style="font-weight:400;color:var(--muted)">اعتمادپرداز</span></td><td>Desktop + hardware</td><td>None published</td><td>~10 yrs</td><td>Fingerprint, face recognition, gate, smart lockers, kiosks.</td><td>Hardware company that ships software, not a software company.</td></tr>
+      <tr><td class="nm">Zaman Pardaz, Antus, Smart Kerman, Bashgah-Yar</td><td>Desktop / Android</td><td>None published</td><td>Regional</td><td>Local presence, buffet + wallet + gate.</td><td>Fragmented, sub-scale, no platform strategy.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="tnote">Pricing opacity is near-universal in Tier 1 — only My-Gym publishes a number. That is itself an opportunity: transparent published pricing is a differentiator in this market in a way it no longer is in the West.</p>
+
+  <h4>Tier 2 — the SaaS layer (small, new, and where Gymona already sits)</h4>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Vendor</th><th>What it actually is</th><th>Price / month</th><th>Threat level</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">Gymona <span class="fa">جیمونا</span></td><td>Full web SaaS gym management. Your Layer 1, shipped.</td><td class="num"><span class="fa">۱٫۴۹</span>M / <span class="fa">۲٫۴۹</span>M / <span class="fa">۴٫۴۹</span>M T</td><td><b>Direct and immediate.</b> Only true peer found.</td></tr>
+      <tr><td class="nm">IranBadan</td><td>Trainer-facing program design + nutrition. Not gym management.</td><td>n/d</td><td>Adjacent. Potential partner or acquisition, not rival.</td></tr>
+      <tr><td class="nm">Gymina <span class="fa">جیمینا</span></td><td>Trainer-facing program/nutrition platform with SMS delivery.</td><td>n/d</td><td>Adjacent. Same.</td></tr>
+      <tr><td class="nm">Dambel</td><td>B2C fitness app + equipment e-commerce.</td><td>Consumer</td><td>Not a competitor.</td></tr>
+      <tr><td class="nm">Chitalk, Tiktak, Bayofa</td><td>Generic CRM / attendance tools with a gym landing page.</td><td>n/d</td><td>Low. SEO noise, not product.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h4>The hidden competitor that beats all of them</h4>
+  <p>Excel, a paper ledger, a WhatsApp group, and the receptionist's memory. <span class="tag t-asm">Assumption</span> Given ~96.6% of listed Iranian gyms are single-owner operations, the majority of the long tail runs on no software at all. That is simultaneously the largest TAM and the worst ICP: no budget line, no receptionist to operate a system, no felt pain until they hit ~200 members. <b>Do not build for them and do not offer them a free tier.</b></p>
+</section>
+
+<section id="matrix">
+  <span class="snum">04 / Competitive matrix</span>
+  <h2>Where GymOS can actually be different</h2>
+  <p class="lede">Scored on evidence where a vendor publishes it, marked <span class="fa">؟</span> where it does not. <b>GymOS</b> column is the recommended target state at V1, not today.</p>
+
+  <div class="scroll">
+  <table>
+    <thead><tr>
+      <th>Capability</th><th>GymOS<br>(target)</th><th>1club</th><th>Gymona</th><th>Parsian /<br>Tier 1 IR</th><th>Mindbody</th><th>Glofox</th><th>Gymdesk</th><th>Virtuagym</th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="nm">Core member mgmt</td><td>Full</td><td>Full</td><td>Full</td><td>Full</td><td>Full</td><td>Full</td><td>Full</td><td>Full</td></tr>
+      <tr><td class="nm">Attendance / QR</td><td>Full + offline</td><td>Full</td><td>Full</td><td>Full (hw)</td><td>Full</td><td>Full</td><td>Full</td><td>Full</td></tr>
+      <tr><td class="nm">Booking / classes</td><td>P1, partial</td><td>Full</td><td>Top tier</td><td>Weak</td><td>Full</td><td>Full</td><td>Full</td><td>Full</td></tr>
+      <tr><td class="nm">Tuition arrears (<span class="fa">بدهی</span>)</td><td><b>Full</b></td><td>None</td><td>Partial</td><td>Full</td><td>None</td><td>None</td><td>None</td><td>None</td></tr>
+      <tr><td class="nm">Locker mgmt (public+VIP)</td><td><b>Full</b></td><td>None</td><td>Full</td><td>Full</td><td>None</td><td>None</td><td>None</td><td>None</td></tr>
+      <tr><td class="nm">Buffet POS + member wallet</td><td><b>Full</b></td><td>POS only</td><td><span class="fa">؟</span></td><td>Full</td><td>Retail</td><td>Retail</td><td>Retail</td><td>Retail</td></tr>
+      <tr><td class="nm">Recurring member billing</td><td><b>Direct debit</b></td><td>Card auto</td><td>None found</td><td>None</td><td>Card auto</td><td>Card auto</td><td>Card auto</td><td>Card auto</td></tr>
+      <tr><td class="nm">CRM / lead pipeline</td><td>P1</td><td>Partial</td><td>None</td><td>None</td><td>Full</td><td>Full</td><td>Partial</td><td>Full</td></tr>
+      <tr><td class="nm">Marketing automation</td><td>Recipes (P0)</td><td>Full (Grow)</td><td>None</td><td>SMS blast</td><td>$469 tier</td><td>Full</td><td>Partial</td><td>Full</td></tr>
+      <tr><td class="nm">Workflow builder</td><td>Engine P0,<br>UI P2</td><td>Full visual</td><td>None</td><td>None</td><td>Partial</td><td>Partial</td><td>Partial</td><td>Partial</td></tr>
+      <tr><td class="nm">Retention intelligence</td><td><b>Rules-based P0</b></td><td>AI Insights</td><td>None</td><td>None</td><td>Partial</td><td>Partial</td><td>Partial</td><td>Partial</td></tr>
+      <tr><td class="nm">AI copilot (read)</td><td>P1</td><td>Full</td><td>None</td><td>None</td><td>$599 tier</td><td>None</td><td>None</td><td>Partial</td></tr>
+      <tr><td class="nm">AI agents (write)</td><td>P2, gated</td><td>Full</td><td>None</td><td>None</td><td>None</td><td>None</td><td>None</td><td>None</td></tr>
+      <tr><td class="nm">Assisted migration</td><td><b>Free + .mdb/.bak</b></td><td>Free, next-day</td><td><span class="fa">؟</span></td><td>Manual</td><td>Paid</td><td>Paid</td><td>Free</td><td>Paid</td></tr>
+      <tr><td class="nm">IR access-control bridge</td><td><b>Full (P0)</b></td><td>None</td><td>Top tier</td><td>Native</td><td>None</td><td>None</td><td>Beta (US)</td><td>None</td></tr>
+      <tr><td class="nm">Solar Hijri calendar</td><td><b>Native</b></td><td>None</td><td>Native</td><td>Native</td><td>None</td><td>None</td><td>None</td><td>None</td></tr>
+      <tr><td class="nm">Persian / RTL</td><td><b>Native</b></td><td>None</td><td>Native</td><td>Native</td><td>None</td><td>None</td><td>None</td><td>None</td></tr>
+      <tr><td class="nm">IR payment gateway</td><td><b>Native</b></td><td>None</td><td>Partial</td><td>Terminal</td><td>None</td><td>None</td><td>None</td><td>None</td></tr>
+      <tr><td class="nm">Member app</td><td>PWA</td><td>Branded +$99</td><td>Portal</td><td>None</td><td>Branded</td><td>Branded</td><td>Included</td><td>Branded</td></tr>
+      <tr><td class="nm">Website builder</td><td><span class="chip c-cut">Cut</span></td><td>+$49–99</td><td>None</td><td>None</td><td>Included</td><td>Included</td><td>Included</td><td>Included</td></tr>
+      <tr><td class="nm">Marketplace / network</td><td><span class="chip c-p3">P3</span></td><td>Sports Network</td><td>None</td><td>None</td><td>Marketplace<br>20% comm.</td><td>None</td><td>None</td><td>None</td></tr>
+      <tr><td class="nm">Multi-location</td><td>P1</td><td>Scale tier</td><td>Top tier</td><td>Partial</td><td>Full</td><td>Full</td><td>+$50/loc</td><td>Full</td></tr>
+      <tr><td class="nm">API / webhooks</td><td>P2</td><td>Run tier</td><td>None</td><td>None</td><td>Full</td><td>Full</td><td>Full</td><td>Full</td></tr>
+      <tr><td class="nm">MCP / AI connect</td><td><span class="chip c-p3">P3</span></td><td>Run tier</td><td>None</td><td>None</td><td>None</td><td>None</td><td>None</td><td>None</td></tr>
+      <tr><td class="nm">Entry price / mo</td><td class="num"><span class="fa">۱٫۹</span>M T</td><td class="num">$0 → $63</td><td class="num"><span class="fa">۱٫۴۹</span>M T</td><td class="num"><span class="fa">۵٫۵</span>M once</td><td class="num">$129–139</td><td class="num">$99</td><td class="num">$75</td><td class="num"><span class="fa">؟</span></td></tr>
+      <tr><td class="nm">Top published / mo</td><td class="num"><span class="fa">۵٫۹</span>M T</td><td class="num">$239</td><td class="num"><span class="fa">۴٫۴۹</span>M T</td><td class="num">modular</td><td class="num">$699+</td><td class="num">~$400</td><td class="num">$200</td><td class="num"><span class="fa">؟</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="tnote">Global vendor prices are as published or as consistently reported across independent 2026 comparisons; Mindbody and Glofox do not publish full pricing, so those ranges are reported estimates. Iranian Tier 1 prices are unpublished except My-Gym. <b>The four bold rows are the only places GymOS can hold a defensible position</b> — arrears, lockers/buffet, direct-debit billing, and the hardware bridge. Everything else is parity at best.</p>
+</section>
+
+<section id="tablestakes">
+  <span class="snum">05 / Feature gravity</span>
+  <h2>Iranian table stakes are not global table stakes</h2>
+  <p class="lede">If you build the Mindbody feature set in Persian, you will have built the wrong product. The two markets have genuinely different centres of gravity.</p>
+
+  <div class="cols">
+    <div>
+      <h4>Required in Iran, absent globally</h4>
+      <ul>
+        <li><b>Tuition + arrears ledger</b> (<span class="fa">شهریه / بدهی</span>) with entry blocking</li>
+        <li><b>Locker management</b> — public auto-assign and VIP monthly contracts</li>
+        <li><b>Buffet / shop POS on a member wallet</b> (<span class="fa">بوفه / کیف پول</span>) charged by card, wristband or fingerprint</li>
+        <li><b>Body measurement archive</b> — multi-stage sizing, BMI/BMR, progress photos</li>
+        <li><b>Workout + nutrition program delivery</b> to the member</li>
+        <li><b>Trainer commission settlement</b> (% of tuition, % of private sessions)</li>
+        <li><b>Session-count memberships</b> (12 / 16 / 24 sessions per month), not just date ranges</li>
+        <li><b>Gendered time blocks</b> — separate men's and women's hours in one facility</li>
+        <li><b>SMS as primary channel</b>, with resold credit</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Core globally, secondary in Iran</h4>
+      <ul>
+        <li><b>Class booking &amp; schedules</b> — the whole global product is built on this; Iranian gyms are open-floor</li>
+        <li><b>Digital waivers &amp; contracts</b> — low enforcement relevance</li>
+        <li><b>Card-on-file auto-billing</b> — no equivalent rail without direct debit</li>
+        <li><b>Branded native mobile app</b> — app-store distribution is impaired; PWA and Cafe Bazaar are the real channels</li>
+        <li><b>Website builder</b> — Iranian gyms market on Instagram, not websites</li>
+        <li><b>Google review management</b> — 1club's entire "Grow" pillar; near-zero Iranian relevance</li>
+        <li><b>Consumer discovery marketplace</b> — Mindbody's 20% commission model has no Iranian analogue</li>
+        <li><b>Belt / progression tracking</b> — martial-arts-specific, small share</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="call">
+    <span class="lab">The consequence</span>
+    <p>Roughly a third of 1club's product — reputation management, Google reviews, website builder, sports network, dynamic pricing — is structurally inapplicable to Iran. And roughly a third of the Iranian requirement — wallet-based buffet, locker contracts, sizing archives, trainer settlement, arrears — does not exist in any global product. <b>You are not localizing a global product. You are building a different product that happens to share a category name.</b> Budget accordingly, and stop using global feature lists as a checklist.</p>
+  </div>
+</section>
+
+<section id="localization">
+  <span class="snum">06 / Localization, ranked</span>
+  <h2>Not all of it matters</h2>
+  <p class="lede">You listed 20 localization requirements. Ranked by business importance, most of the value sits in the top five.</p>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>#</th><th>Requirement</th><th>Why it ranks here</th><th>Call</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="nm">Solar Hijri calendar (<span class="fa">تقویم شمسی</span>)</td><td>Not a display concern. Billing periods, membership expiry, reporting windows, fiscal year ending <span class="fa">اسفند</span>, and official holidays all key off it. Getting it wrong is disqualifying in the first demo.</td><td><span class="chip c-p0">P0</span></td></tr>
+      <tr><td class="num">2</td><td class="nm">Access-control hardware bridge</td><td>The switching barrier. Fingerprint, face, gate, online locker locks. Determines whether a Tier-1 customer can move at all.</td><td><span class="chip c-p0">P0</span></td></tr>
+      <tr><td class="num">3</td><td class="nm">Iranian payment rails + direct debit</td><td>The wedge itself. Gateway for your own subscription, direct debit for members' dues.</td><td><span class="chip c-p0">P0</span></td></tr>
+      <tr><td class="num">4</td><td class="nm">Persian / RTL, Toman–Rial toggle</td><td>Table stakes. Gymona and every incumbent have it. Note Toman/Rial must be a display toggle — gyms quote Toman, invoices often carry Rial.</td><td><span class="chip c-p0">P0</span></td></tr>
+      <tr><td class="num">5</td><td class="nm">SMS provider integration + credit accounting</td><td>Only reliable channel. Must support a dedicated sender line, delivery receipts, per-gym credit balance, and resale margin.</td><td><span class="chip c-p0">P0</span></td></tr>
+      <tr><td class="num">6</td><td class="nm">Migration from Access / SQL Server desktop files</td><td>The real migration problem is not Excel — it is extracting <code>.mdb</code> and <code>.bak</code> from a reception-desk PC. Needs a small Windows extractor utility.</td><td><span class="chip c-p0">P0</span></td></tr>
+      <tr><td class="num">7</td><td class="nm">Offline-tolerant check-in</td><td><span class="tag t-rec">Missing from your brief.</span> Iranian connectivity is throttled and periodically disrupted. A cloud product whose front desk stops working during an outage will be returned. Needs local queue + sync.</td><td><span class="chip c-p0">P0</span></td></tr>
+      <tr><td class="num">8</td><td class="nm">In-country hosting</td><td>Latency, national-network survivability during international throttling, and a data-residency answer for the "my data in the cloud" objection.</td><td><span class="chip c-p0">P0</span></td></tr>
+      <tr><td class="num">9</td><td class="nm">Persian invoices + <span class="fa">سامانه مودیان</span> readiness</td><td><span class="tag t-asm">Validate</span> Electronic invoice submission to the tax authority is an emerging obligation. No competitor surfaced as handling it. Could be a fast, cheap differentiator — but confirm gym applicability and threshold first.</td><td><span class="chip c-p1">P1</span></td></tr>
+      <tr><td class="num">10</td><td class="nm">Instagram lead capture (manual)</td><td>Gyms acquire on Instagram despite filtering. No API path. Ship a fast "add lead from DM" flow, not an integration.</td><td><span class="chip c-p1">P1</span></td></tr>
+      <tr><td class="num">11</td><td class="nm">Accounting export (<span class="fa">سپیدار / هلو</span>)</td><td>Export, not native double-entry bookkeeping. See <a href="#dontbuild">§08</a>.</td><td><span class="chip c-p2">P2</span></td></tr>
+      <tr><td class="num">12</td><td class="nm">Persian contracts / waivers</td><td>Low enforcement value. A PDF template generator is enough.</td><td><span class="chip c-p2">P2</span></td></tr>
+      <tr><td class="num">13</td><td class="nm">WhatsApp / Telegram adapters</td><td>Opportunistic only. Never a dependency.</td><td><span class="chip c-p2">P2</span></td></tr>
+      <tr><td class="num">14</td><td class="nm">Iranian payroll compliance</td><td>Labour-law payroll is a swamp with its own vendors. Do trainer commission settlement only.</td><td><span class="chip c-cut">Cut</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="ledger">
+  <span class="snum">07 / Conflict &amp; duplication ledger</span>
+  <h2>Merging your list with the 1club-inspired list</h2>
+  <p class="lede">As requested — every overlapping concept resolved to one final feature rather than appended.</p>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Your feature</th><th>Inspired addition</th><th>Decision</th><th>Final feature</th></tr></thead>
+    <tbody>
+      <tr><td>Retention Engine</td><td>AI Insights, Churn Prediction, Member Health Score, Revenue Leakage Detection, AI Retention Recommendations</td><td><span class="chip c-acc">Merge ×5</span></td><td class="nm"><b>Retention Intelligence</b> — one surface: detect risk → explain why → recommend action → fire the automation. Rules-based at MVP, model-based only after 12 months of data.</td></tr>
+      <tr><td>Marketing Automation, Campaigns, Segmentation, Upselling, Renewal Management</td><td>Behavior-based Marketing Automation, AI-personalized Messaging, Workflow Builder</td><td><span class="chip c-acc">Merge ×7</span></td><td class="nm"><b>Automation Recipes</b> — a shared trigger/condition/action/delay engine with 6–8 pre-built gym recipes. Visual builder deferred.</td></tr>
+      <tr><td>CRM, Lead Management, Sales Pipeline, Trial/Guest Management</td><td>Lead generation (Grow pillar)</td><td><span class="chip c-acc">Merge ×4</span></td><td class="nm"><b>Lead Desk</b> — one pipeline: lead → trial → first visit → sale. Not a general CRM.</td></tr>
+      <tr><td>Reports, Dashboard, Capacity Analytics, Class Performance, Revenue Forecasting, Benchmarking</td><td>Business Reporting, AI Business Advisor</td><td><span class="chip c-acc">Merge ×7</span></td><td class="nm"><b>Owner Dashboard</b> + saved reports. Forecasting is P2; benchmarking needs 200+ gyms, so P3.</td></tr>
+      <tr><td>AI Copilot, AI Agent Actions</td><td>Configuration agent, Response agent</td><td><span class="chip c-acc">Merge, split</span></td><td class="nm"><b>Ask GymOS</b> (read-only, P1) and <b>GymOS Actions</b> (write, approval-gated, P2). Do not ship them as one thing.</td></tr>
+      <tr><td>Customer Feedback, NPS/CSAT, Reputation Mgmt, Review Mgmt</td><td>Google review automation</td><td><span class="chip c-p3">Reduce</span></td><td class="nm"><b>Post-visit SMS pulse</b> only. Google reviews are irrelevant here; reputation management is 1club's model, not yours.</td></tr>
+      <tr><td>AI-powered Migration</td><td>Next-day free migration</td><td><span class="chip c-acc">Replace concept</span></td><td class="nm"><b>48-hour Switch Service</b> — sold as an outcome and a guarantee, delivered by a Windows extractor + mapping tool + a human. The AI is your internal cost reduction, not the pitch.</td></tr>
+      <tr><td>Member Portal, PWA, Branded Mobile App</td><td>Branded member app (+$99/mo)</td><td><span class="chip c-acc">Collapse ×3</span></td><td class="nm"><b>Member PWA</b>, one codebase. Branded native app is an enterprise-tier add-on at V2, if a chain pays for it.</td></tr>
+      <tr><td>Access Control, QR Check-in, Attendance</td><td>Kiosk app</td><td><span class="chip c-acc">Merge ×4</span></td><td class="nm"><b>Door</b> — QR, card, fingerprint bridge, kiosk mode, all offline-tolerant, one module.</td></tr>
+      <tr><td>Finance, Payments, POS, Inventory</td><td>Retail products &amp; inventory, POS/discounts</td><td><span class="chip c-acc">Merge ×4</span></td><td class="nm"><b>Money</b> — tuition, arrears, member wallet, buffet POS, simple stock. One ledger, not four modules.</td></tr>
+      <tr><td>AI Website Builder, Website Builder</td><td>Gym website builder</td><td><span class="chip c-cut">Remove</span></td><td class="nm">—</td></tr>
+      <tr><td>MCP / AI Connect, ChatGPT/Claude integration</td><td>"Connect to AI Assistants (MCP)"</td><td><span class="chip c-p3">Defer</span></td><td class="nm">P3. 1club ships this for Western AI-mediated discovery. That channel does not reach your buyers.</td></tr>
+      <tr><td>Dynamic Pricing</td><td>AI dynamic pricing</td><td><span class="chip c-cut">Remove</span></td><td class="nm">Iranian gym tuition sits against published union rate cards (<span class="fa">نرخ‌نامه</span>). Algorithmic pricing against a regulated table is a legal exposure, not a feature.</td></tr>
+      <tr><td>Marketplace, Sports Network, Cross-Gym Membership, Trainer Marketplace, Fitness Community</td><td>1club Sports Network</td><td><span class="chip c-p3">Defer ×5</span></td><td class="nm">Network effects need density you will not have before ~300 gyms in one city. Revisit at V3.</td></tr>
+      <tr><td>Staff Management, Staff Scheduling, Substitution, Payroll</td><td>Payroll</td><td><span class="chip c-acc">Reduce</span></td><td class="nm"><b>Staff &amp; Trainer Settlement</b> — shifts and commission. No statutory payroll.</td></tr>
+      <tr><td>Equipment Mgmt, Maintenance, Smart Waitlist, Family Accounts, Corporate Accounts</td><td>Family accounts</td><td><span class="chip c-p2">Defer</span></td><td class="nm">Corporate accounts to P2 (real B2B2C demand from Iranian employers). The rest P3.</td></tr>
+      <tr><td>—</td><td><span class="tag t-rec">New, from research</span></td><td><span class="chip c-p0">P0</span></td><td class="nm"><b>Member Direct Debit</b>, <b>Offline Door</b>, <b>Locker Contracts</b>, <b>Buffet Wallet</b>, <b>Arrears Recovery</b>. None were in your brief. All are P0.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="dontbuild">
+  <span class="snum">08 / The kill list</span>
+  <h2>What you should not build</h2>
+  <p class="lede">You asked me to be ruthless. This is roughly 40% of the proposed roadmap, removed or deferred past the point where it affects the next two years.</p>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Feature</th><th>Verdict</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">AI Website Builder</td><td><span class="chip c-cut">Remove</span></td><td>Iranian gyms acquire on Instagram. A website needs hosting, domain, <span class="fa">ساماندهی</span> registration and ongoing content nobody will write. Expensive to build, near-zero pull, and it competes with free page builders.</td></tr>
+      <tr><td class="nm">Reputation / review management</td><td><span class="chip c-cut">Remove</span></td><td>This is 1club's single biggest "Grow" investment and it is built entirely on Google reviews. The Iranian equivalent does not exist at meaningful volume.</td></tr>
+      <tr><td class="nm">Dynamic pricing</td><td><span class="chip c-cut">Remove</span></td><td>Regulated tariff context. Legal risk exceeds the revenue upside.</td></tr>
+      <tr><td class="nm">Native double-entry accounting</td><td><span class="chip c-cut">Remove</span></td><td>Iranian accounting software is a mature, defended category. Build a clean export and an invoice generator; do not compete with <span class="fa">سپیدار</span>.</td></tr>
+      <tr><td class="nm">Statutory payroll</td><td><span class="chip c-cut">Remove</span></td><td>Labour-law payroll carries compliance liability you cannot absorb pre-PMF. Trainer commission only.</td></tr>
+      <tr><td class="nm">Branded native mobile app</td><td><span class="chip c-p2">Defer</span></td><td>Two extra codebases, store-distribution friction, and 1club charges $99/mo for it precisely because it's a cost centre. Ship a PWA; add Cafe Bazaar packaging only if asked twice.</td></tr>
+      <tr><td class="nm">Visual workflow builder UI</td><td><span class="chip c-p2">Defer</span></td><td><b>Build the engine, not the canvas.</b> Your buyer currently uses Excel and a paper ledger. A Zapier-style drag-drop canvas will be opened once and never again. Ship 6–8 hardcoded recipes with on/off toggles and editable copy — that captures ~90% of the value at ~10% of the cost.</td></tr>
+      <tr><td class="nm">ML churn prediction</td><td><span class="chip c-p2">Defer</span></td><td>You have no training data and won't for 12+ months. Rules-based risk scoring — attendance drop vs. the member's own baseline, days-to-expiry, no-show streak, arrears age — is ~95% as useful for this decision and ships in two weeks.</td></tr>
+      <tr><td class="nm">Benchmarking against other gyms</td><td><span class="chip c-p3">Defer</span></td><td>Statistically meaningless below ~200 customers, and prematurely exposing it teaches competitors your customer count.</td></tr>
+      <tr><td class="nm">MCP server / ChatGPT connector</td><td><span class="chip c-p3">Defer</span></td><td>1club ships this to be discoverable <em>by</em> Western AI assistants — an SEO play for a market where buyers ask ChatGPT for recommendations. Iranian buyers largely cannot reach those assistants. Zero transfer.</td></tr>
+      <tr><td class="nm">Marketplace / sports network / cross-gym membership</td><td><span class="chip c-p3">Defer</span></td><td>Classic two-sided-network trap. Needs city-level density you won't have for years, and pursuing it early splits focus between a B2B SaaS and a consumer product.</td></tr>
+      <tr><td class="nm">Equipment maintenance, smart waitlist, family accounts, belt progression</td><td><span class="chip c-p3">Defer</span></td><td>Each is real for someone and material for almost nobody in your beachhead.</td></tr>
+      <tr><td class="nm">Multi-vertical configurability (yoga, padel, tennis, academies)</td><td><span class="chip c-p3">Defer</span></td><td>See <a href="#arch">§10</a>. Model it generically; do not <em>productize</em> it. Building vertical switching before PMF is the most common way a product like this dies.</td></tr>
+      <tr><td class="nm">Free tier</td><td><span class="chip c-cut">Remove</span></td><td>Covered in <a href="#pricing">§13</a>. In a market where support is phone-and-AnyDesk and SMS costs real money, free accounts are a direct, unrecoverable cost.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="priority">
+  <span class="snum">09 / Prioritization matrix</span>
+  <h2>The full feature call</h2>
+  <p class="lede">Complexity and value scored 1–5. "Edge" is competitive advantage against the <em>Iranian</em> field specifically.</p>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Feature</th><th>Status</th><th>Pri</th><th class="num">User</th><th class="num">Rev</th><th class="num">Cplx</th><th class="num">Edge</th><th>Decision &amp; reason</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">Members, memberships, plans</td><td>Existing</td><td><span class="chip c-p0">P0</span></td><td class="num">5</td><td class="num">2</td><td class="num">2</td><td class="num">0</td><td>Table stakes. Build fast, do not over-invest.</td></tr>
+      <tr><td class="nm">Tuition, arrears, member wallet</td><td>New</td><td><span class="chip c-p0">P0</span></td><td class="num">5</td><td class="num">5</td><td class="num">3</td><td class="num">3</td><td>The Iranian core. Every incumbent has it; global products don't.</td></tr>
+      <tr><td class="nm">Member direct debit</td><td><b>New</b></td><td><span class="chip c-p0">P0</span></td><td class="num">4</td><td class="num">5</td><td class="num">5</td><td class="num">5</td><td><b>The wedge.</b> Highest complexity, highest defensibility. Validate feasibility first.</td></tr>
+      <tr><td class="nm">Door: QR + card + offline queue</td><td>Existing</td><td><span class="chip c-p0">P0</span></td><td class="num">5</td><td class="num">2</td><td class="num">3</td><td class="num">2</td><td>Offline tolerance is the non-obvious requirement.</td></tr>
+      <tr><td class="nm">Hardware bridge agent</td><td><b>New</b></td><td><span class="chip c-p0">P0</span></td><td class="num">3</td><td class="num">5</td><td class="num">4</td><td class="num">5</td><td>Unlocks the installed base. Without it your TAM is only greenfield gyms.</td></tr>
+      <tr><td class="nm">Locker contracts (public + VIP)</td><td>Existing</td><td><span class="chip c-p0">P0</span></td><td class="num">4</td><td class="num">3</td><td class="num">2</td><td class="num">3</td><td>Cheap, expected, and a real revenue line for the gym.</td></tr>
+      <tr><td class="nm">Buffet POS on wallet</td><td>Existing</td><td><span class="chip c-p0">P0</span></td><td class="num">4</td><td class="num">3</td><td class="num">3</td><td class="num">3</td><td>Demo-losing if absent. Every Iranian rival ships it.</td></tr>
+      <tr><td class="nm">Solar Hijri everywhere</td><td>Existing</td><td><span class="chip c-p0">P0</span></td><td class="num">5</td><td class="num">1</td><td class="num">2</td><td class="num">0</td><td>Disqualifying if wrong. Not a differentiator.</td></tr>
+      <tr><td class="nm">SMS engine + credit</td><td>Existing</td><td><span class="chip c-p0">P0</span></td><td class="num">4</td><td class="num">4</td><td class="num">2</td><td class="num">1</td><td>Only reliable channel; carries a resale margin.</td></tr>
+      <tr><td class="nm">Automation engine (triggers/actions)</td><td>Existing</td><td><span class="chip c-p0">P0</span></td><td class="num">2</td><td class="num">5</td><td class="num">3</td><td class="num">4</td><td>Engine only. Retention runs on it.</td></tr>
+      <tr><td class="nm">Retention Intelligence (rules)</td><td>Merged</td><td><span class="chip c-p0">P0</span></td><td class="num">4</td><td class="num">5</td><td class="num">2</td><td class="num">5</td><td>The thing you sell. Rules, not ML.</td></tr>
+      <tr><td class="nm">48-hour Switch Service</td><td>Replaced</td><td><span class="chip c-p0">P0</span></td><td class="num">5</td><td class="num">4</td><td class="num">3</td><td class="num">5</td><td>GTM weapon. Removes the #1 objection to switching.</td></tr>
+      <tr><td class="nm">Owner dashboard + reports</td><td>Existing</td><td><span class="chip c-p0">P0</span></td><td class="num">5</td><td class="num">3</td><td class="num">2</td><td class="num">3</td><td>"See your gym from your phone" — the emotional pitch vs. desktop incumbents.</td></tr>
+      <tr><td class="nm">Trainer commission settlement</td><td>Existing</td><td><span class="chip c-p0">P0</span></td><td class="num">4</td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td>Expected. Cheap.</td></tr>
+      <tr><td class="nm">Member PWA</td><td>Collapsed</td><td><span class="chip c-p1">P1</span></td><td class="num">4</td><td class="num">3</td><td class="num">3</td><td class="num">3</td><td>Needed for direct-debit mandate capture; that's what pulls it forward.</td></tr>
+      <tr><td class="nm">Lead Desk (lead→trial→sale)</td><td>Merged</td><td><span class="chip c-p1">P1</span></td><td class="num">3</td><td class="num">4</td><td class="num">2</td><td class="num">4</td><td>No Iranian competitor has any CRM at all.</td></tr>
+      <tr><td class="nm">Booking (sessions, lanes, women's hours)</td><td>Existing</td><td><span class="chip c-p1">P1</span></td><td class="num">3</td><td class="num">2</td><td class="num">3</td><td class="num">1</td><td>Demoted from your Layer 1. Secondary in an open-floor market.</td></tr>
+      <tr><td class="nm">Workout + nutrition programs</td><td>Existing</td><td><span class="chip c-p1">P1</span></td><td class="num">4</td><td class="num">2</td><td class="num">3</td><td class="num">1</td><td>Expected, but IranBadan/Gymina do it better. Consider partnering instead of building.</td></tr>
+      <tr><td class="nm">Body measurement archive</td><td>Existing</td><td><span class="chip c-p1">P1</span></td><td class="num">4</td><td class="num">1</td><td class="num">2</td><td class="num">1</td><td>Iranian expectation; cheap to satisfy.</td></tr>
+      <tr><td class="nm">Ask GymOS (read-only copilot)</td><td>Merged</td><td><span class="chip c-p1">P1</span></td><td class="num">3</td><td class="num">2</td><td class="num">3</td><td class="num">3</td><td>Great demo, weak retention. Ship it for sales, not for the roadmap.</td></tr>
+      <tr><td class="nm">Multi-branch</td><td>Existing</td><td><span class="chip c-p1">P1</span></td><td class="num">3</td><td class="num">5</td><td class="num">3</td><td class="num">2</td><td>Gates the highest-ARPU tier. Pull forward if a chain signs.</td></tr>
+      <tr><td class="nm"><span class="fa">مودیان</span> e-invoice</td><td>New</td><td><span class="chip c-p1">P1</span></td><td class="num">2</td><td class="num">3</td><td class="num">3</td><td class="num">4</td><td>Validate first. If applicable, it is a cheap and lonely differentiator.</td></tr>
+      <tr><td class="nm">GymOS Actions (write agent)</td><td>Split</td><td><span class="chip c-p2">P2</span></td><td class="num">2</td><td class="num">2</td><td class="num">4</td><td class="num">3</td><td>Approval-gated only. An agent that mis-sends 800 SMS is an unrecoverable support event.</td></tr>
+      <tr><td class="nm">Visual workflow builder</td><td>Deferred</td><td><span class="chip c-p2">P2</span></td><td class="num">2</td><td class="num">2</td><td class="num">4</td><td class="num">2</td><td>Expose when a customer asks twice.</td></tr>
+      <tr><td class="nm">API / webhooks</td><td>Existing</td><td><span class="chip c-p2">P2</span></td><td class="num">1</td><td class="num">2</td><td class="num">2</td><td class="num">1</td><td>No Iranian integration ecosystem to plug into yet.</td></tr>
+      <tr><td class="nm">Corporate accounts</td><td>New</td><td><span class="chip c-p2">P2</span></td><td class="num">2</td><td class="num">4</td><td class="num">3</td><td class="num">4</td><td>Real Iranian employer-wellness demand; nobody serves it.</td></tr>
+      <tr><td class="nm">Accounting export</td><td>New</td><td><span class="chip c-p2">P2</span></td><td class="num">3</td><td class="num">1</td><td class="num">1</td><td class="num">1</td><td>Integration, not a module.</td></tr>
+      <tr><td class="nm">ML churn model, forecasting, benchmarking</td><td>Deferred</td><td><span class="chip c-p3">P3</span></td><td class="num">2</td><td class="num">2</td><td class="num">5</td><td class="num">2</td><td>Needs data and scale you won't have until year 3.</td></tr>
+      <tr><td class="nm">MCP, marketplace, network, branded app</td><td>Deferred</td><td><span class="chip c-p3">P3</span></td><td class="num">1</td><td class="num">1</td><td class="num">5</td><td class="num">1</td><td>See kill list.</td></tr>
+      <tr><td class="nm">Website builder, reputation, dynamic pricing, payroll, accounting</td><td>Killed</td><td><span class="chip c-cut">Cut</span></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>Structurally inapplicable or legally exposed.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="arch">
+  <span class="snum">10 / Architecture &amp; lifecycle</span>
+  <h2>Model it generically. Sell it as gym software.</h2>
+
+  <h3>On the Organization / Location / Service / Session abstraction</h3>
+  <p><span class="tag t-rec">Recommendation</span> <b>Adopt the data model, reject the product strategy.</b> Naming your tables <code>Organization</code>, <code>Location</code>, <code>Member</code>, <code>Service</code>, <code>Session</code>, <code>Booking</code>, <code>Membership</code>, <code>Payment</code>, <code>Lead</code>, <code>Automation</code> costs nothing today and saves a rewrite later. It is simply good schema design.</p>
+  <p>But do not build vertical <em>configurability</em> — no vertical switcher, no per-vertical onboarding, no terminology engine. Every hour spent making the product work for padel is an hour not spent winning a bodybuilding gym, and Iranian padel, tennis and climbing are rounding errors against ~7,000 mapped commercial gyms. Ship gym vocabulary in the UI. When a pilates studio signs up anyway — and they will, because the schema supports it — treat that as a signal, not a roadmap.</p>
+  <p>One addition your entity list is missing: <code>Contract</code> and <code>Mandate</code> as first-class objects, distinct from <code>Membership</code>. A membership is what the member bought; a mandate is the standing authorization to collect for it. Conflating them makes the direct-debit wedge unbuildable later.</p>
+
+  <h3>On the member lifecycle as the central model</h3>
+  <p><span class="tag t-obs">Observed</span> The lifecycle you drew is correct and it should be the product's spine — every screen should be answerable as "which stage is this member in, and what moves them forward?" That is a genuinely good instinct and it is what 1club's Run/Grow split is reaching for.</p>
+  <p>Three stages are missing, and each is where Iranian gyms actually lose money:</p>
+  <ul>
+    <li><b>Freeze / <span class="fa">تعلیق</span></b> — between Attendance and Payment. Iranian gyms freeze memberships constantly (travel, <span class="fa">رمضان</span>, injury, summer). Every incumbent ships freezing. A frozen member is not churned and must not be billed — and must not count toward your own pricing tier either.</li>
+    <li><b>Arrears / <span class="fa">بدهی</span></b> — a state, not an event. A member can be attending and in debt simultaneously. This is the single most common real-world state in an Iranian gym and it doesn't appear in your lifecycle at all.</li>
+    <li><b>Win-back</b> — after Renewal fails. The lapsed-member list is the cheapest lead source a gym has and nobody works it.</li>
+  </ul>
+  <p>Revised spine: <code>Lead → Trial → Sale → Onboarding → First Workout → Engagement → (Freeze ⇄ Active ⇄ Arrears) → Renewal → Upsell → Referral → Lapse → Win-back</code>.</p>
+</section>
+
+<section id="mvp">
+  <span class="snum">11 / Release plan</span>
+  <h2>MVP, V1, V2, long term</h2>
+  <p class="lede">The MVP has one job: prove an Iranian gym will abandon a paid desktop system for GymOS and pay monthly. Everything that doesn't serve that question is out.</p>
+
+  <div class="tl">
+    <div>
+      <div class="when">MVP<br><span style="color:var(--muted);font-weight:400">~4 mo</span></div>
+      <div>
+        <p style="margin-bottom:10px"><b>The question it answers:</b> will a 400-member gym switch and pay?</p>
+        <ul>
+          <li><b>Members, memberships, session-count plans, freeze</b> — the spine</li>
+          <li><b>Money</b> — tuition, arrears ledger, member wallet, buffet POS, receipts</li>
+          <li><b>Door</b> — QR + card check-in, offline queue and sync, entry blocking on arrears</li>
+          <li><b>Hardware bridge v1</b> — read from the two most common installed controllers (pick by survey, not by guess)</li>
+          <li><b>SMS engine</b> + credit accounting + dedicated sender line</li>
+          <li><b>Automation engine</b> + exactly 6 recipes: expiry-7d, expiry-1d, lapsed-14d, arrears reminder, birthday, first-week check-in</li>
+          <li><b>Retention Intelligence v1</b> — rules-based risk list with a stated reason per member</li>
+          <li><b>Owner dashboard</b> — mobile-first, revenue / attendance / expiring / arrears</li>
+          <li><b>Trainer commission settlement</b>, lockers, Solar Hijri throughout</li>
+          <li><b>48-hour Switch Service</b> — Windows extractor for <code>.mdb</code>/<code>.bak</code> + Excel/CSV + mapping UI + human</li>
+        </ul>
+        <p style="margin-top:10px;margin-bottom:0;color:var(--muted);font-size:14px"><b>Explicitly out of MVP:</b> booking, CRM, member PWA, AI anything, multi-branch, programs, API, website.</p>
+      </div>
+    </div>
+    <div>
+      <div class="when">V1<br><span style="color:var(--muted);font-weight:400">+3 mo</span></div>
+      <div>
+        <ul>
+          <li><b>Member direct debit</b> — mandate capture in the PWA, collection runs, retries, dunning, reconciliation. <em>This is the release that changes the business.</em></li>
+          <li><b>Member PWA</b> — membership, attendance, dues, receipts, renewal, program view</li>
+          <li><b>Lead Desk</b> — lead → trial → visit → sale, with manual Instagram-DM entry</li>
+          <li><b>Booking</b> — women's hours, pool lanes, group sessions</li>
+          <li><b>Workout + nutrition programs</b>, body measurement archive</li>
+          <li><b>Ask GymOS</b> — read-only copilot over the gym's own data</li>
+          <li><b>Multi-branch</b></li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="when">V2<br><span style="color:var(--muted);font-weight:400">+6 mo</span></div>
+      <div>
+        <ul>
+          <li><b>Hardware bridge v2</b> — write-back (remote unlock, gate control), online locker locks, face/fingerprint enrolment</li>
+          <li><b>GymOS Actions</b> — approval-gated write agent, starting with segment + campaign creation only</li>
+          <li><b>Corporate accounts</b> — employer-funded memberships</li>
+          <li><span class="fa">مودیان</span> <b>e-invoicing</b> if validated; accounting export</li>
+          <li>Visual workflow builder, API + webhooks</li>
+          <li>Revenue forecasting; first cohort-based retention analytics</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="when">Long<br><span style="color:var(--muted);font-weight:400">Y3+</span></div>
+      <div>
+        <ul>
+          <li><b>Payments take-rate becomes the primary revenue line</b> — the only path past the subscription ceiling</li>
+          <li><b>Regional export</b> — Iraq, Afghanistan, Tajikistan share language and calendar; Turkey and the Gulf share the hardware-led market structure. Pick one and validate before Y3.</li>
+          <li>Benchmarking (needs 200+ gyms), ML churn model (needs 12+ months of data)</li>
+          <li>Vertical expansion, if and only if inbound demand forces it</li>
+          <li>Marketplace / network — last, or never</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="icp">
+  <span class="snum">12 / Beachhead</span>
+  <h2>Segment B, and nothing else for 18 months</h2>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Segment</th><th>Verdict</th><th>Reasoning</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">A — 100–300 members</td><td><span class="chip c-p2">Later</span></td><td>96.6% of listed gyms are single-owner, so this is the volume. But no receptionist to operate the system, lowest WTP, anchored on My-Gym's one-time 5.5M licence, and the highest support cost per Toman of revenue. Serve them at V2 with a stripped self-serve tier once support is automated.</td></tr>
+      <tr><td class="nm"><b>B — 300–1,500 members</b></td><td><span class="chip c-p0">Beachhead</span></td><td><b>They already pay for software, so there is no category to create — only a vendor to replace.</b> They employ a receptionist who can be trained and who becomes your internal champion. Retention math is material: at ~2.5M Toman average tuition, a 600-member gym losing 8% monthly is losing ~120M Toman a month — which makes a 3M Toman software bill a rounding error against the problem you solve. And they decide in one meeting with one person.</td></tr>
+      <tr><td class="nm">C — 1,000–10,000, multi-branch</td><td><span class="chip c-p1">Second</span></td><td>Highest ARPU and the best logos, but deepest hardware lock-in, longest sales cycle, and they will not be your first reference. Pursue after 30 Segment-B customers give you proof.</td></tr>
+      <tr><td class="nm">D — Chains</td><td><span class="chip c-p2">Opportunistic</span></td><td>Iranian gym chains are few. Take one if it walks in; do not build a strategy around it.</td></tr>
+      <tr><td class="nm">E — Other sports</td><td><span class="chip c-p3">No</span></td><td>Serve inbound, build nothing.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><b>Geographic beachhead:</b> Tehran and Karaj first, then Mashhad, Isfahan, Shiraz, Tabriz. <span class="tag t-asm">Assumption</span> Directory data puts the largest counts in Hormozgan, Khuzestan and Isfahan, but Tehran concentrates the mid-size, staffed, software-paying gyms and lets a two-person sales team do in-person demos without travel cost.</p>
+
+  <div class="call">
+    <span class="lab">The precise ICP</span>
+    <p>A 350–900 member gym in Tehran or Karaj, single site or two, with a paid receptionist, an installed access-control gate or fingerprint reader, currently running Parsian / Tanasob / My-Gym / BodySoft on a reception-desk PC, whose owner checks the gym's numbers by phoning the receptionist. <b>Qualifying question that predicts the sale: "how much of last month's tuition is still uncollected?"</b> If they know the number and it makes them wince, you will close them. If they don't know it, they are not ready.</p>
+  </div>
+</section>
+
+<section id="pricing">
+  <span class="snum">13 / Pricing</span>
+  <h2>Price above Gymona, not below</h2>
+  <p class="lede">Your hypothesis undercuts the only true SaaS peer by ~30%. That is the wrong direction on every axis I can measure.</p>
+
+  <h3>The arithmetic your buyer never does</h3>
+  <p><span class="tag t-fact">Fact</span> Tehran mid-market gym tuition runs roughly <span class="fa">۲</span>–<span class="fa">۳٫۲</span>M Toman per member per month; economy and municipal halls sit near <span class="fa">۱</span>–<span class="fa">۱٫۵</span>M; luxury runs <span class="fa">۶</span>–<span class="fa">۱۵</span>M. <span class="tag t-asm">Assumption</span> Take a 600-member Segment-B gym at <span class="fa">۲٫۵</span>M average and 70% collection: roughly <b><span class="fa">۱٬۰۵۰</span>M Toman monthly revenue</b>.</p>
+
+  <div class="stats">
+    <div><div class="v">0.24%</div><div class="k">Gymona's <span class="fa">۲٫۴۹</span>M tier as a share of that gym's revenue</div></div>
+    <div><div class="v">1–3%</div><div class="k">What gym software costs as a share of revenue in mature markets</div></div>
+    <div><div class="v">~10×</div><div class="k">The headroom between the two. This market is under-priced, not over-priced.</div></div>
+  </div>
+
+  <p>Software is not expensive here in any absolute sense. It <em>feels</em> expensive because the anchor is a <span class="fa">۵٬۵۰۰٬۰۰۰</span> Toman one-time licence, which makes any subscription look like a permanent tax. That is a framing problem, not a pricing problem, and you do not solve a framing problem by cutting price — you solve it by changing what the number is compared against.</p>
+
+  <h3>Recommended model: E+F hybrid — tiered by active member, plus transaction</h3>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Tier</th><th>Active members</th><th class="num">Monthly</th><th class="num">Annual (10×)</th><th>Gate</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">Trial</td><td>—</td><td class="num">Free 30 days</td><td class="num">—</td><td>Full product + free migration. No feature crippling.</td></tr>
+      <tr><td class="nm">Pro</td><td>to 400</td><td class="num"><span class="fa">۱٬۹۰۰٬۰۰۰</span> T</td><td class="num"><span class="fa">۱۹٬۰۰۰٬۰۰۰</span> T</td><td>Core + door + money + SMS + automation recipes</td></tr>
+      <tr><td class="nm">Growth</td><td>to 1,200</td><td class="num"><span class="fa">۳٬۴۰۰٬۰۰۰</span> T</td><td class="num"><span class="fa">۳۴٬۰۰۰٬۰۰۰</span> T</td><td>+ direct debit, Retention Intelligence, Lead Desk, PWA, copilot</td></tr>
+      <tr><td class="nm">Scale</td><td>to 3,000</td><td class="num"><span class="fa">۵٬۹۰۰٬۰۰۰</span> T</td><td class="num"><span class="fa">۵۹٬۰۰۰٬۰۰۰</span> T</td><td>+ multi-branch, hardware write-back, corporate accounts, account manager</td></tr>
+      <tr><td class="nm">Chain</td><td>3,000+</td><td class="num">Custom</td><td class="num">Custom</td><td>Per-location, SLA, onboarding</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <ul>
+    <li><b>Count active members the way 1club and Gymdesk do</b> — exclude frozen, cancelled and unconverted leads. Charging for a frozen member in a market where freezing is constant will generate more cancellations than revenue.</li>
+    <li><b>Direct debit sits behind the Growth tier.</b> It is the upgrade trigger and the reason the mid tier exists. Launch the take-rate at <b>0% for the first 12 months</b> to drive mandate adoption, then introduce a flat fee per successful collection — a percentage reads as a tax on their revenue; a fixed fee reads as a service.</li>
+    <li><b>SMS credit sold at a margin</b>, market-validated by My-Gym's <span class="fa">۲۴۸٬۰۰۰</span> Toman top-ups. Meaningful gross-profit contribution, zero selling effort.</li>
+    <li><b>Annual prepay at 10× monthly.</b> Matches Gymona, matches how Iranian SMBs prefer to buy, converts payback to the day of signature, and de-risks rial revenue. Push it hard — target 50%+ of new business on annual.</li>
+    <li><b>Publish a written annual indexation clause.</b> <span class="tag t-rec">Critical and missing from your brief.</span> In a 40%+ inflation economy, a locked rial price is a guaranteed margin collapse within 24 months. Say in the contract that pricing is reviewed each <span class="fa">فروردین</span>. Customers accept this in Iran because every supplier they have does it — but only if it was disclosed up front.</li>
+  </ul>
+
+  <div class="call warn">
+    <span class="lab">Kill the free tier</span>
+    <p>1club offers free to 100 members. Copying that in Iran is a mistake. Iranian SMB software support is phone, WhatsApp and AnyDesk — a free account consumes the same human support as a paid one, plus SMS credit, plus payment-rail overhead on micro-transactions. And the <span class="fa">&lt;</span>100-member gym you attract is the segment you explicitly deprioritized.</p>
+    <p><b>Replace it with what actually removes risk:</b> a 30-day full-feature trial and free migration. The buyer's fear is not price — it is that switching will break their front desk. Answer that fear, not a price objection they haven't raised.</p>
+  </div>
+</section>
+
+<section id="econ">
+  <span class="snum">14 / Unit economics &amp; scenarios</span>
+  <h2>Three cases, and one uncomfortable conclusion</h2>
+  <p class="lede">Every figure below is an <span class="tag t-asm">estimate</span> built on the marked research in <a href="#evidence">§21</a>. Iranian gym-software market data is not published; these are modelled, not measured.</p>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Metric</th><th class="num">Conservative</th><th class="num">Base</th><th class="num">Aggressive</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">Paying gyms, end Y1</td><td class="num">18</td><td class="num">35</td><td class="num">60</td></tr>
+      <tr><td class="nm">Paying gyms, end Y2</td><td class="num">55</td><td class="num">120</td><td class="num">260</td></tr>
+      <tr><td class="nm">Paying gyms, end Y3</td><td class="num">120</td><td class="num">300</td><td class="num">650</td></tr>
+      <tr><td class="nm">ARPU, Y3 (Toman/mo)</td><td class="num">3.2M</td><td class="num">3.8M</td><td class="num">4.6M</td></tr>
+      <tr><td class="nm">MRR, end Y3 (Toman)</td><td class="num">384M</td><td class="num">1,140M</td><td class="num">2,990M</td></tr>
+      <tr><td class="nm">ARR, end Y3 (Toman)</td><td class="num">4.6B</td><td class="num">13.7B</td><td class="num">35.9B</td></tr>
+      <tr><td class="nm">ARR, end Y3 (USD indicative)</td><td class="num">~$42k</td><td class="num">~$124k</td><td class="num">~$326k</td></tr>
+      <tr><td class="nm">Monthly logo churn</td><td class="num">4.0%</td><td class="num">3.0%</td><td class="num">2.2%</td></tr>
+      <tr><td class="nm">Gross margin</td><td class="num">70%</td><td class="num">74%</td><td class="num">76%</td></tr>
+      <tr><td class="nm">CAC (Toman)</td><td class="num">22M</td><td class="num">18M</td><td class="num">15M</td></tr>
+      <tr><td class="nm">LTV (Toman)</td><td class="num">56M</td><td class="num">84M</td><td class="num">135M</td></tr>
+      <tr><td class="nm">LTV : CAC</td><td class="num">2.5×</td><td class="num">4.7×</td><td class="num">9.0×</td></tr>
+      <tr><td class="nm">CAC payback (monthly plan)</td><td class="num">~10 mo</td><td class="num">~7 mo</td><td class="num">~5 mo</td></tr>
+      <tr><td class="nm">Break-even</td><td class="num">~150 gyms<br>mid-Y4</td><td class="num">~115 gyms<br>end-Y2</td><td class="num">~110 gyms<br>Q3-Y2</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="tnote">Gross margin is below Western SaaS norms because Iranian SMB software buyers expect phone / WhatsApp / AnyDesk support, SMS is a pass-through cost, and migration is delivered as a service. USD conversion at an assumed <span class="fa">۱۱۰٬۰۰۰</span> Toman/$ and is indicative only — the rate is volatile and the comparison is directional.</p>
+
+  <h3>Market sizing</h3>
+  <ul>
+    <li><span class="tag t-fact">Fact</span> ~98,000 sports venues nationwide per the Ministry of Sport — but this includes government, armed forces, education, university and municipal facilities. <b>It is not your TAM</b> and should never appear in a deck as one.</li>
+    <li><span class="tag t-obs">Observed</span> ~7,022 commercially listed gyms in a 2026 directory scrape, 96.57% single-owner. Acknowledged undercount of unlisted businesses.</li>
+    <li><span class="tag t-asm">Assumption</span> <b>TAM</b> — commercial gyms with any software budget at all: 10,000–18,000.</li>
+    <li><span class="tag t-asm">Assumption</span> <b>SAM</b> — Segment B (300–1,500 members, staffed, top 8 cities): 1,800–3,000.</li>
+    <li><span class="tag t-asm">Assumption</span> <b>SOM Y3</b> — base case 300 gyms ≈ 10–17% of SAM. Aggressive at 650 assumes SAM is at the upper bound and you take a third of it, which is a strong claim requiring channel leverage, not more salespeople.</li>
+  </ul>
+</section>
+
+<section id="ceiling">
+  <span class="snum">15 / The ceiling</span>
+  <h2>Iran-only gym SaaS does not become a large company</h2>
+
+  <p>This is the finding you most need and least asked for. Run the aggressive case again: 650 paying gyms — roughly a third of the realistic serviceable market, achieved in three years, which almost never happens — produces about <b><span class="fa">۳۶</span> billion Toman of ARR</b>. Indicatively that is a few hundred thousand dollars. It is a genuinely good small business. It is not a venture outcome, and it will not support venture-scale funding or the AI roadmap in your brief.</p>
+
+  <p>There are exactly three ways past the ceiling, and you should pick one deliberately now rather than discovering the problem in year three:</p>
+
+  <div class="cols">
+    <div>
+      <h4>1 — Payments take-rate</h4>
+      <p style="font-size:14.5px;margin-bottom:0">A 600-member gym collecting <span class="fa">۱٬۰۵۰</span>M Toman monthly through your rails dwarfs its <span class="fa">۳٫۴</span>M subscription. Even a small per-collection fee eventually exceeds all subscription revenue combined. <b>This is the highest-probability path and it is why the direct-debit wedge matters strategically, not just competitively.</b></p>
+    </div>
+    <div>
+      <h4>2 — Regional export</h4>
+      <p style="font-size:14.5px;margin-bottom:0">Iraq, Afghanistan and Tajikistan share language and calendar. Turkey, the Gulf and Central Asia share the hardware-led, cash-heavy, desktop-incumbent market structure that global SaaS ignores. Your real product — <em>a gym platform for markets Mindbody won't serve</em> — travels better than your Persian localization does.</p>
+    </div>
+    <div>
+      <h4>3 — Stay small deliberately</h4>
+      <p style="font-size:14.5px;margin-bottom:0">Bootstrap to ~115 gyms, break even, run it profitably with a team of six. This is entirely achievable on the base case and is an honourable outcome — but it is incompatible with raising money on a "Business Operating System + AI platform" story. Decide which business you are in before you pitch anyone.</p>
+    </div>
+  </div>
+
+  <div class="call warn">
+    <span class="lab">The strategic trap</span>
+    <p>Your brief's vision — Operations → Sales → CRM → Marketing → Retention → Finance → AI → Automation → Network — is a roadmap sized for a market roughly 50× larger than the one you're entering. Building all of it for 300 Iranian gyms means each feature is amortized over a customer base too small to fund it. <b>The ambition isn't wrong; the sequencing is.</b> Earn the right to the platform vision by first owning one expensive problem completely.</p>
+  </div>
+</section>
+
+<section id="gtm">
+  <span class="snum">16 / Go-to-market &amp; moat</span>
+  <h2>The installers are the channel</h2>
+
+  <h3>Acquisition, ranked by expected yield</h3>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Channel</th><th>Call</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">Access-control / hardware installers</td><td><span class="chip c-p0">Primary</span></td><td><b>The highest-leverage insight in this analysis.</b> The people who sold and wired the gate, fingerprint reader and locker locks already have the trust relationship, already visit the site, and are currently locked into reselling a desktop product with no recurring revenue. Offer them 20–25% recurring commission and they become a distributed sales force you don't pay a salary for. They also solve your support problem.</td></tr>
+      <tr><td class="nm">Direct field sales, Tehran/Karaj</td><td><span class="chip c-p0">Primary</span></td><td>Two people, in-person demos, ~3 visits a day. This market buys from a person who shows up. Budget the migration labour into CAC.</td></tr>
+      <tr><td class="nm">Referral from existing customers</td><td><span class="chip c-p1">Build in</span></td><td>Gym owners in a city know each other. Make the referral incentive a subscription credit, not cash.</td></tr>
+      <tr><td class="nm">Gym equipment vendors &amp; consultants</td><td><span class="chip c-p1">Partner</span></td><td>Present at every new gym opening. Greenfield gyms have no migration problem and close fastest.</td></tr>
+      <tr><td class="nm">Instagram</td><td><span class="chip c-p2">Support</span></td><td>Filtered but universally used. Useful for credibility and inbound, unreliable as a primary funnel.</td></tr>
+      <tr><td class="nm">SEO / content</td><td><span class="chip c-p2">Slow</span></td><td>Persian queries for <span class="fa">نرم افزار مدیریت باشگاه</span> are dominated by 20-year-old domains. A long game worth starting, not worth waiting on.</td></tr>
+      <tr><td class="nm">Free tier / product-led growth</td><td><span class="chip c-cut">No</span></td><td>See <a href="#pricing">§13</a>. Support economics don't permit it.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Which moats are real</h3>
+  <div class="cols">
+    <div>
+      <h4>Defensible</h4>
+      <ul>
+        <li><b>Payment mandates.</b> Switching means re-authorizing every member. The strongest lock available to you.</li>
+        <li><b>The extractor library.</b> Every incumbent format you learn to read is permanent, compounding, and boring enough that nobody copies it.</li>
+        <li><b>Hardware bridge coverage.</b> Same logic — each controller supported widens the addressable base and is tedious to replicate.</li>
+        <li><b>PSP / regulatory relationship.</b> Slow to obtain, which is exactly what makes it valuable.</li>
+        <li><b>Installer channel relationships.</b> Exclusive-ish, and they have finite attention.</li>
+        <li><b>Operating history in the account.</b> Two years of attendance, dues and member records is genuinely painful to leave.</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Not defensible — stop counting on these</h4>
+      <ul>
+        <li><b>AI.</b> Commoditizes every six months. 1club is AI-native and still competes on price.</li>
+        <li><b>Features.</b> Gymona can ship anything you ship.</li>
+        <li><b>UX.</b> Real advantage, zero durability.</li>
+        <li><b>Price.</b> A competitor with the same cost base can always match it.</li>
+        <li><b>Data.</b> You have no proprietary data, only your customers' — and it's exportable.</li>
+        <li><b>Brand.</b> Earned late, not a founding strategy.</li>
+        <li><b>Marketplace / network effects.</b> Require density you will not reach.</li>
+        <li><b>Integrations.</b> There is no Iranian integration ecosystem to be central to.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="whyswitch">
+  <span class="snum">17 / The core question</span>
+  <h2>Why would an Iranian gym choose GymOS?</h2>
+
+  <h4>Three reasons they will</h4>
+  <ol>
+    <li><b>It collects money they are currently losing.</b> Direct-debit renewal, arrears recovery, expiry campaigns. Quantified in Toman on their own P&amp;L, in their first month. No competitor — Iranian or global — offers this in this market.</li>
+    <li><b>Switching costs them nothing and takes 48 hours.</b> Free migration off their existing desktop system, and it keeps working with the gate and fingerprint reader they already paid for. You remove both fears at once.</li>
+    <li><b>The owner can finally see their own gym.</b> Every incumbent is a Windows box at the reception desk. Being able to check revenue, attendance and arrears from a phone at 11pm is a genuine emotional differentiator against a 20-year-old desktop product — and it is the thing that gets demoed in 30 seconds.</li>
+  </ol>
+
+  <h4>Three reasons they won't — and the answer to each</h4>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Objection</th><th>How to answer it</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">"I paid <span class="fa">۵٫۵</span>M once. Why pay every month forever?"</td><td>Lead with the annual plan so it reads as one payment, like the licence they're used to. Publish a written 3-year total-cost comparison including what the incumbent actually charges for extra modules, support renewals, SMS and hardware. Then reframe: the subscription is not a software cost, it is a share of the dues it recovers. <b>Never argue the price — change what it's compared to.</b></td></tr>
+      <tr><td class="nm">"My data in the cloud. What if the internet goes down, or gets filtered?"</td><td>This is the most legitimate objection in the Iranian market and it kills cloud deals. Answer structurally, not verbally: offline-tolerant check-in with a local queue, in-country hosting that survives international throttling, a visible one-click full data export, and automatic daily backups the owner can download. <b>Demo the front desk working with the network cable unplugged.</b> That demo closes deals.</td></tr>
+      <tr><td class="nm">"Parsian's guy picks up the phone and comes to my gym."</td><td>You cannot out-feature a relationship. Match it instead: a named account manager, phone and WhatsApp support, AnyDesk sessions, and on-site setup — the same standard My-Gym and Parsian already set. Then co-opt it: recruit the installers who <em>are</em> that relationship into your reseller programme. Fighting the channel loses; buying it wins.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="risks">
+  <span class="snum">18 / Risks</span>
+  <h2>What kills this</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Risk</th><th>Severity</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">Direct debit unobtainable for your entity</td><td><span class="chip c-p0">Fatal</span></td><td>Validate in week one, before any product code. If blocked, fall back to gateway-link + SMS dunning and accept that the strategy weakens to feature parity with Gymona.</td></tr>
+      <tr><td class="nm">Gymona raises, hires, and out-executes</td><td><span class="chip c-p0">High</span></td><td>They are ahead on Layer 1 and you will not catch up by copying. Your defence is to compete on an axis they haven't chosen — money movement and hardware — not on features.</td></tr>
+      <tr><td class="nm">Inflation destroys rial margins</td><td><span class="chip c-p0">High</span></td><td>Disclosed annual indexation clause, annual prepay, and cost base kept in rial where possible.</td></tr>
+      <tr><td class="nm">Hardware bridge proves impossible for the common controllers</td><td><span class="chip c-p1">High</span></td><td>Survey 20 gyms and buy two used controllers before committing. If closed protocols block you, pivot the bridge to read-only attendance sync, which is still enough to migrate.</td></tr>
+      <tr><td class="nm">Infrastructure &amp; connectivity disruption</td><td><span class="chip c-p1">Medium</span></td><td>Offline-first front desk, in-country hosting, SMS fallback for every critical notification.</td></tr>
+      <tr><td class="nm">Support cost per account exceeds model</td><td><span class="chip c-p1">Medium</span></td><td>The reason the free tier is killed and Segment A is deferred. Watch gross margin monthly; it's the leading indicator.</td></tr>
+      <tr><td class="nm">Regulatory change on payments or messaging</td><td><span class="chip c-p2">Medium</span></td><td>Channel-abstract the messaging layer. Keep a second PSP relationship warm.</td></tr>
+      <tr><td class="nm">Roadmap sprawl back toward the full platform vision</td><td><span class="chip c-p1">High</span></td><td>The most likely failure mode, and the one entirely within your control. Re-read the kill list quarterly.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="strategy">
+  <span class="snum">19 / Final recommendation</span>
+  <h2>GO — with changes</h2>
+  <p class="lede">Build it, because the market has a real, expensive, unsolved problem and the incumbents are structurally unable to solve it. Change it, because the differentiation you proposed is not the differentiation that wins.</p>
+
+  <h3>The GymOS strategy in thirteen lines</h3>
+  <ol>
+    <li><b>Sell recovered revenue, not software.</b> Every message, demo and price justification is denominated in the gym's own Toman.</li>
+    <li><b>Member direct debit is the wedge.</b> It is the only feature in this analysis that is simultaneously high-value, hard to copy, and absent from every competitor.</li>
+    <li><b>The hardware bridge is the go-to-market unlock.</b> Without it your market is only new gyms; with it, the entire installed base becomes reachable.</li>
+    <li><b>Beachhead is 300–1,500 member staffed gyms in Tehran and Karaj</b> that already pay for software. Replace a vendor; don't create a category.</li>
+    <li><b>Recruit the access-control installers as your channel.</b> They own the relationship you need and currently earn nothing recurring.</li>
+    <li><b>Price at or above Gymona</b> — <span class="fa">۱٫۹</span> / <span class="fa">۳٫۴</span> / <span class="fa">۵٫۹</span>M Toman — with a disclosed annual indexation clause and a hard push on annual prepay.</li>
+    <li><b>No free tier.</b> A 30-day full trial plus free 48-hour migration removes the real fear, which is switching risk, not price.</li>
+    <li><b>Build the Iranian feature core, not the global one</b> — tuition, arrears, lockers, buffet wallet, freeze, trainer settlement, session-count plans — and demote booking to P1.</li>
+    <li><b>Offline-tolerant front desk is a P0 requirement,</b> not a nice-to-have. Demo it with the cable unplugged.</li>
+    <li><b>Ship the automation engine, not the automation canvas.</b> Six hardcoded recipes beat a builder your buyer will never open.</li>
+    <li><b>Rules-based Retention Intelligence now; ML later or never.</b> You have no training data and the rules are nearly as good.</li>
+    <li><b>Cut roughly 40% of the AI roadmap</b> — website builder, reputation, dynamic pricing, MCP, marketplace, benchmarking. Keep a read-only copilot because it sells, and gate write-agents behind approval.</li>
+    <li><b>Decide now whether this is a payments company, an export company, or a profitable small business,</b> because Iran-only subscription revenue tops out around <span class="fa">۳۶</span>B Toman ARR even when everything goes right.</li>
+  </ol>
+</section>
+
+<section id="next">
+  <span class="snum">20 / Execution</span>
+  <h2>Next 7, 30 and 90 days</h2>
+
+  <div class="tl">
+    <div>
+      <div class="when">7 days</div>
+      <div>
+        <p style="margin-bottom:10px"><b>Goal: find out whether the strategy is legal and buildable before you write a line of product code.</b></p>
+        <ul>
+          <li><b>Call Zarinpal and one PSP</b> about <span class="fa">پرداخت مستقیم</span> — eligibility for your entity type, KYC requirements, mandate limits, settlement timing, fees. This single answer determines the whole plan.</li>
+          <li>Visit <b>10 Segment-B gyms</b> in Tehran. Ask exactly three questions: what software do you use, how much of last month's tuition is still uncollected, and which brand of gate/fingerprint reader is on your door. Write down the controller model numbers.</li>
+          <li>Get a <b>Gymona trial account</b> and use it for a week. Document precisely what it does well — you need to know what you are actually up against, not what its marketing page says.</li>
+          <li>Buy or borrow <b>one used access-control controller</b> and see whether you can read attendance records off it.</li>
+          <li>Verify whether <span class="fa">سامانه مودیان</span> e-invoicing obligations apply to gyms at their revenue scale.</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="when">30 days</div>
+      <div>
+        <ul>
+          <li><b>Write the switching-cost teardown</b>: acquire a copy of Parsian, Tanasob and My-Gym data files and confirm you can extract members, memberships, payments and attendance from each. This is your migration moat — prove it works before you promise 48 hours.</li>
+          <li><b>Hardware bridge spike</b> — a working read-only sync from one real controller to a database. Ship nothing else until this works.</li>
+          <li><b>Sign 3 design partners</b> from the 10 visited gyms. Free for 6 months in exchange for weekly access and a reference. Pick ones with a gate installed and a receptionist.</li>
+          <li><b>Recruit 2 installer partners</b> and put the reseller commission in writing.</li>
+          <li><b>Lock the MVP scope</b> against the list in §11 and refuse every addition for four months.</li>
+          <li>Model the P&amp;L in rial with an explicit inflation assumption, and decide which of the three ceiling paths you are on.</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="when">90 days</div>
+      <div>
+        <ul>
+          <li><b>MVP running live in the 3 design-partner gyms</b> — real members, real money, real door, front desk surviving a network outage.</li>
+          <li><b>One complete migration executed end-to-end</b> off a desktop incumbent, timed. If it takes longer than 48 hours, fix the tooling before selling the promise.</li>
+          <li><b>Direct-debit integration in sandbox</b> with at least one live mandate captured from a real member.</li>
+          <li><b>First paying customer</b> — not a design partner, a gym that chose to pay. This is the only milestone that matters; everything before it is preparation.</li>
+          <li><b>Published pricing page in Persian</b> with the indexation clause visible. Transparency is itself a differentiator in a market where only one competitor publishes a number.</li>
+          <li><b>Decide on the AI layer</b> with evidence: did any design partner ask for it even once?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="evidence">
+  <span class="snum">21 / Evidence ledger</span>
+  <h2>Sources, and what is and isn't verified</h2>
+  <p class="lede">Research conducted September 2026 in Persian and English. Everything in this document is marked: <span class="tag t-fact">Fact</span> published by the source; <span class="tag t-obs">Observed</span> a pattern across multiple sources; <span class="tag t-asm">Assumption</span> modelled, not measured; <span class="tag t-rec">Recommendation</span> my judgment.</p>
+
+  <h4>Iranian market — primary sources</h4>
+  <ul>
+    <li><a href="https://gymona.ir/">gymona.ir</a> — <span class="tag t-fact">Fact</span> Tier names, Toman pricing, athlete limits, feature gating, 10-day demo. The key competitive document in this analysis.</li>
+    <li><a href="https://parsiansoftware.com/gms/">parsiansoftware.com/gms</a> — <span class="tag t-fact">Fact</span> Modular "phase" licensing, hardware list, 1,000+ clubs and 20+ years claimed, no published pricing.</li>
+    <li><a href="https://my-gym.ir/">my-gym.ir</a> — <span class="tag t-fact">Fact</span> <span class="fa">۵٬۵۰۰٬۰۰۰</span> Toman one-time price, <span class="fa">۲۴۸٬۰۰۰</span> Toman SMS credit, hybrid desktop/cloud, early web app.</li>
+    <li><a href="https://www.pendarpardaz.com/">pendarpardaz.com</a> (Tanasob) — <span class="tag t-fact">Fact</span> 546 clubs, in market since <span class="fa">۱۳۸۴</span>.</li>
+    <li><a href="https://www.etemadpardaz.ir/">etemadpardaz.ir</a> (BodySoft), <a href="https://zamanpardaz.com/">zamanpardaz.com</a>, <a href="https://antus.ir/home/">antus.ir</a>, <a href="https://smartkerman.ir/gym-management-software/">smartkerman.ir</a> — <span class="tag t-obs">Observed</span> Consistent hardware-led, desktop, unpublished-pricing pattern across the Tier 1 field.</li>
+    <li><a href="https://dambel.app/">dambel.app</a>, <a href="https://gymina.ir/">gymina.ir</a>, <a href="https://app.iranbadan.com/fa/">iranbadan.com</a> — <span class="tag t-fact">Fact</span> None are gym management platforms. Correction to the brief's competitor list.</li>
+    <li><a href="https://www.zarinpal.com/landing/direct-debit/">zarinpal.com direct debit</a> — <span class="tag t-fact">Fact</span> Licensed recurring-collection product under Shaparak supervision; <span class="fa">پرداخت‌یاری</span> licence held since <span class="fa">۱۳۹۷</span>.</li>
+  </ul>
+
+  <h4>Iranian market context</h4>
+  <ul>
+    <li><a href="https://www.tasnimnews.ir/fa/news/1405/05/29/3675410/">Tasnim — Ministry of Sport</a> — <span class="tag t-fact">Fact</span> 98,000 sports venues nationwide, all sectors. Not the commercial TAM.</li>
+    <li><a href="https://rentechdigital.com/smartscraper/business-report-details/list-of-gyms-in-iran">RenTech directory data</a> — <span class="tag t-obs">Observed</span> 7,022 listed gyms, 96.57% single-owner, +4.72% since 2023. Directory scrape; undercounts.</li>
+    <li><a href="https://bashgahpro.com/complete-guide-to-tehran-fitness-club-prices/">Bashgah Pro</a>, <a href="https://www.tala.ir/news/detail/191204/">Tala.ir</a>, <a href="https://sanjagh.pro/price/%D8%A8%D8%A7%D8%B4%DA%AF%D8%A7%D9%87-%D8%A8%D8%AF%D9%86%D8%B3%D8%A7%D8%B2%DB%8C-%D9%88-%D9%81%DB%8C%D8%AA%D9%86%D8%B3">Sanjagh</a> — <span class="tag t-obs">Observed</span> Tehran tuition <span class="fa">۱</span>–<span class="fa">۱٫۵</span>M economy, <span class="fa">۲</span>–<span class="fa">۴</span>M mid-market, <span class="fa">۶</span>–<span class="fa">۱۵</span>M luxury; provinces 30–50% lower.</li>
+    <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10764965/">Health and fitness trends in Iran, AIMS Public Health</a> — <span class="tag t-fact">Fact</span> Peer-reviewed survey; technology-related fitness trends are not yet mainstream in Iran; traditional strength training and multi-purpose gyms dominate. Supports the "open-floor, not class-based" finding and tempers AI-demand assumptions.</li>
+    <li><a href="https://shahraranews.ir/fa/news/380378/">Shahrara</a>, <a href="https://www.yjc.ir/fa/news/8889391/">YJC</a>, <a href="https://fa.wikipedia.org/wiki/%D8%AA%D9%84%DA%AF%D8%B1%D8%A7%D9%85_%D8%AF%D8%B1_%D8%A7%DB%8C%D8%B1%D8%A7%D9%86">Telegram in Iran</a> — <span class="tag t-fact">Fact</span> Telegram filtered through <span class="fa">۱۴۰۴</span>; WhatsApp unblocked <span class="fa">دی ۱۴۰۳</span> then publicly contested; Instagram filtered.</li>
+  </ul>
+
+  <h4>Global benchmarks</h4>
+  <ul>
+    <li><a href="https://1club.ai/pricing">1club.ai/pricing</a> and <a href="https://1club.ai/">1club.ai</a> — <span class="tag t-fact">Fact</span> Free (100 members) / Run $63 / Grow $239, branded app +$99, website +$49–99, MCP and API on Run, free migration, Sports Network, AI agents for configuration, response, insights, dynamic pricing.</li>
+    <li><a href="https://gymdesk.com/pricing">Gymdesk</a> — <span class="tag t-fact">Fact</span> $75–$200 by member count, all features every tier, +$50/location.</li>
+    <li><a href="https://gymdesk.com/blog/gym-management-software-cost">Gym software cost guide</a>, <a href="https://goteamup.com/compare/zenplanner">TeamUp comparisons</a> — <span class="tag t-obs">Observed</span> TeamUp $35–119, PushPress $0–229 plus add-ons to $664, Zen Planner $99–348 plus add-ons. Vendor-published; framing favours the publisher, price points corroborate across sources.</li>
+    <li><a href="https://www.fitbudd.com/post/how-much-does-mindbody-cost">Mindbody pricing analysis</a>, <a href="https://www.wodify.com/blog/glofox-pricing">Glofox pricing analysis</a> — <span class="tag t-obs">Observed</span> Mindbody $129–$699+ with 20% marketplace commission; Glofox ~$99–$400. Neither publishes full pricing; these are reported estimates.</li>
+    <li><a href="https://www.saastr.com/the-challenge-with-smb-saas">SaaStr on SMB churn</a>, <a href="https://optif.ai/learn/questions/b2b-saas-churn-rate-benchmark/">B2B churn benchmarks</a> — <span class="tag t-obs">Observed</span> SMB SaaS monthly churn 3–5%; 70% of churn in first 90 days; annual contracts churn 30–40% less. Used as the proxy for the Iranian churn assumptions, since no Iranian data is published.</li>
+  </ul>
+
+  <h4>What I could not verify</h4>
+  <ul>
+    <li>Gymona's actual customer count, funding, or team size. Its pricing page is public; its traction is not.</li>
+    <li>Any Iranian gym-software market size, revenue, or share data. None is published. All sizing here is modelled.</li>
+    <li>Iranian SaaS churn, CAC or ARPU benchmarks. None found in either language. Global SMB benchmarks used as proxy and marked as such.</li>
+    <li>Whether <span class="fa">سامانه مودیان</span> e-invoicing currently binds gyms at typical revenue levels — flagged for validation in week one.</li>
+    <li>Access-control controller protocols and whether they are readable. The 30-day plan exists to answer this.</li>
+    <li>"Nexoura" — no trace in Persian or English. If this is a real competitor, the name is different.</li>
+  </ul>
+</section>
+
+<footer>
+  <p>Prepared September 2026. Competitor pricing and filtering status are time-sensitive and were current at the date of research — re-verify Gymona's and 1club's pricing pages before quoting either in a deck.</p>
+</footer>
+
+</div>

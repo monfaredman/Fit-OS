@@ -1,0 +1,30 @@
+{
+  "name": "@gymos/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Domain core — money, Jalali, ledger. No framework, no database.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./money": { "types": "./dist/money.d.ts", "import": "./dist/money.js" },
+    "./jalali": { "types": "./dist/jalali.d.ts", "import": "./dist/jalali.js" },
+    "./ledger": { "types": "./dist/ledger.d.ts", "import": "./dist/ledger.js" }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "jalaali-js": "^1.2.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
