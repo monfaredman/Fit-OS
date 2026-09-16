@@ -75,9 +75,17 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (!reachable) return;
+  // D-009: `session_replication_role = replica` also disables the system
+  // triggers that implement foreign keys, so the cascade never runs and every
+  // child row is orphaned. Suspend only OUR triggers.
+  const appendOnly = [
+    'ledger_entry', 'check_in', 'stock_movement', 'sms_credit_ledger',
+    'audit_log', 'drawer_close',
+  ];
   await owner.begin(async (tx) => {
-    await tx`SET LOCAL session_replication_role = replica`;
+    for (const t of appendOnly) await tx.unsafe(`ALTER TABLE ${t} DISABLE TRIGGER USER`);
     await tx`DELETE FROM organization WHERE id IN (${orgA}, ${orgB})`;
+    for (const t of appendOnly) await tx.unsafe(`ALTER TABLE ${t} ENABLE TRIGGER USER`);
   });
   await owner.end({ timeout: 5 });
   await app.end({ timeout: 5 });

@@ -7,6 +7,7 @@ import { HealthModule } from './health/health.module.js';
 import { MembershipsModule } from './memberships/memberships.module.js';
 import { MoneyModule } from './money/money.module.js';
 import { PeopleModule } from './people/people.module.js';
+import { SyncModule } from './sync/sync.module.js';
 
 /** Infra first, then features. No ConfigModule — `getConfig()` is imported directly. */
 @Module({
@@ -18,6 +19,7 @@ import { PeopleModule } from './people/people.module.js';
     MembershipsModule,
     MoneyModule,
     CheckInsModule,
+    SyncModule,
     HealthModule,
   ],
 })
