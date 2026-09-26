@@ -1,9 +1,7 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
-import { CurrentUser } from '../auth/current-user.decorator.js';
-import { CapabilityGuard, RequireCapability } from '../auth/roles.guard.js';
-import { StaffAuthGuard, type AuthUser } from '../auth/staff-auth.guard.js';
+import { SyncActor, SyncAuthGuard, type SyncPrincipal } from './sync-auth.guard.js';
 import { SyncService } from './sync.service.js';
 
 const snapshotQuerySchema = z.object({
@@ -27,26 +25,30 @@ const flushBodySchema = z.object({
     .max(200),
 });
 
+/**
+ * Accepts EITHER a staff bearer token or a paired device credential. A kiosk
+ * gets a device credential, which reaches these two endpoints and nothing else
+ * — in particular it cannot take a payment.
+ */
 @ApiTags('sync')
 @ApiBearerAuth()
-@UseGuards(StaffAuthGuard, CapabilityGuard)
+@UseGuards(SyncAuthGuard)
 @Controller('v1/sync')
 export class SyncController {
   constructor(private readonly sync: SyncService) {}
 
   /** Snapshot deltas by monotonic `rev`. An unknown `since` returns the full set. */
   @Get('snapshot')
-  @RequireCapability('checkin.create')
-  snapshot(@CurrentUser() user: AuthUser, @Query() query: unknown) {
+  snapshot(@SyncActor() actor: SyncPrincipal, @Query() query: unknown) {
     const q = snapshotQuerySchema.parse(query);
-    return this.sync.snapshot(user, q.locationId, q.since ?? null);
+    // A device is pinned to its own location, whatever it asks for.
+    return this.sync.snapshot(actor, actor.locationId ?? q.locationId, q.since ?? null);
   }
 
   /** Flush an offline outbox. Accepted and duplicate are both success. */
   @Post('check-ins')
-  @RequireCapability('checkin.create')
-  flush(@CurrentUser() user: AuthUser, @Body() body: unknown) {
+  flush(@SyncActor() actor: SyncPrincipal, @Body() body: unknown) {
     const b = flushBodySchema.parse(body);
-    return this.sync.flush(user, b.locationId, b.events);
+    return this.sync.flush(actor, actor.locationId ?? b.locationId, b.events);
   }
 }

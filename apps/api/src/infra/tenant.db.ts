@@ -32,6 +32,15 @@ export interface SessionPrincipal extends Record<string, unknown> {
   role: string;
 }
 
+/** A paired device. No staff id, no role — a kiosk is not a person. */
+export interface DevicePrincipalRow extends Record<string, unknown> {
+  deviceId: string;
+  orgId: string;
+  locationId: string;
+  kind: string;
+  label: string | null;
+}
+
 /** A login candidate. Carries the password hash — never log or return it. */
 export interface StaffCandidate extends Record<string, unknown> {
   id: string;
@@ -74,8 +83,10 @@ export class TenantDb {
    * cannot be enumerated or guessed, and nothing is returned without an exact
    * match. Everything downstream runs inside `withOrg`.
    *
-   * This, `staffByMobile()` and `ping()` are the only untenanted queries in
-   * the application. Adding a fourth requires a very good reason.
+   * This, `staffByMobile()`, `resolveDevice()`, `redeemPairingCode()` and
+   * `ping()` are the only untenanted queries in the application. Each is keyed
+   * on an unguessable hash and returns at most one row. Adding another
+   * requires a very good reason.
    */
   async resolveSession(tokenHash: string): Promise<SessionPrincipal | null> {
     const rows = await this.db.execute<SessionPrincipal>(
@@ -104,6 +115,31 @@ export class TenantDb {
       sql`SELECT * FROM auth_staff_by_mobile(${mobile})`,
     );
     return rows as unknown as StaffCandidate[];
+  }
+
+  /**
+   * Resolve a paired device credential. Untenanted for the same reason as
+   * resolveSession, via `auth_resolve_device` (0004_device_pairing.sql).
+   */
+  async resolveDevice(secretHash: string): Promise<DevicePrincipalRow | null> {
+    const rows = await this.db.execute<DevicePrincipalRow>(
+      sql`SELECT * FROM auth_resolve_device(${secretHash})`,
+    );
+    return (rows as unknown as DevicePrincipalRow[])[0] ?? null;
+  }
+
+  /**
+   * Burn a pairing code and mint the device secret in one statement, so a
+   * concurrent second attempt cannot also succeed.
+   */
+  async redeemPairingCode(
+    codeHash: string,
+    secretHash: string,
+  ): Promise<{ deviceId: string; orgId: string; locationId: string } | null> {
+    const rows = await this.db.execute<{ deviceId: string; orgId: string; locationId: string }>(
+      sql`SELECT * FROM auth_redeem_pairing_code(${codeHash}, ${secretHash})`,
+    );
+    return (rows as unknown as { deviceId: string; orgId: string; locationId: string }[])[0] ?? null;
   }
 
   /** Liveness probe. Deliberately untenanted — see resolveSession. */

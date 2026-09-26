@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { jalaliYm } from '@gymos/core';
 import { sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
-import type { AuthUser } from '../auth/staff-auth.guard.js';
 import { TenantDb, type Tx } from '../infra/tenant.db.js';
 
 /**
@@ -67,7 +66,7 @@ export class SyncService {
    * clock is untrustworthy and the server's can move. A counter per location
    * cannot.
    */
-  async snapshot(user: AuthUser, locationId: string, since: number | null): Promise<SnapshotPage> {
+  async snapshot(user: { orgId: string }, locationId: string, since: number | null): Promise<SnapshotPage> {
     return this.db.withOrg(user.orgId, async (tx) => {
       const head = await this.headRev(tx, locationId);
 
@@ -141,7 +140,7 @@ export class SyncService {
    * removed between caching and flushing — and must not be retried forever.
    */
   async flush(
-    user: AuthUser,
+    user: { orgId: string },
     locationId: string,
     events: FlushEvent[],
   ): Promise<{

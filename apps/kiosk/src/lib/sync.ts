@@ -38,8 +38,13 @@ interface SnapshotPage {
   serverTime: string;
 }
 
-function authHeaders(token: string): HeadersInit {
-  return { 'content-type': 'application/json', authorization: `Bearer ${token}` };
+/**
+ * A paired kiosk presents a DEVICE credential, not a staff token. It reaches
+ * exactly the two sync endpoints — it cannot take a payment, which is the
+ * whole point of pairing an unattended machine in a public room.
+ */
+function authHeaders(deviceSecret: string): HeadersInit {
+  return { 'content-type': 'application/json', authorization: `Device ${deviceSecret}` };
 }
 
 /**

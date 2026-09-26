@@ -51,7 +51,9 @@ export default function App() {
   const inputRef = useRef<HTMLInputElement>(null);
   const clearTimer = useRef<number>(0);
 
-  const token = localStorage.getItem('gymos:token') ?? '';
+  // A device secret, obtained once by redeeming a pairing code — never a
+  // staff token (TASK-013).
+  const token = localStorage.getItem('gymos:deviceSecret') ?? '';
   const locationId = localStorage.getItem('gymos:locationId') ?? '';
   const deviceId = localStorage.getItem('gymos:deviceId') ?? 'kiosk1';
 
@@ -122,10 +124,10 @@ export default function App() {
     return (
       <Shell>
         <p className="text-xl">
-          این دستگاه هنوز تنظیم نشده است.
+          این دستگاه هنوز جفت نشده است.
           <br />
           <span className="text-base opacity-70">
-            توکن و شناسه شعبه را در تنظیمات وارد کنید.
+            از پذیرش کد شش‌رقمی بگیرید و وارد کنید.
           </span>
         </p>
       </Shell>

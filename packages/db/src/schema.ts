@@ -546,7 +546,12 @@ export const device = pgTable(
     label: text('label'),
     controllerModel: text('controller_model'),
     agentVersion: text('agent_version'),
-    secretHash: text('secret_hash').notNull(),
+    /** Null until the device redeems its pairing code. */
+    secretHash: text('secret_hash'),
+    pairingCodeHash: text('pairing_code_hash'),
+    pairingExpiresAt: ts('pairing_expires_at'),
+    pairedAt: ts('paired_at'),
+    revokedAt: ts('revoked_at'),
     clockOffsetMs: integer('clock_offset_ms'),
     lastSeenAt: ts('last_seen_at'),
     createdAt: ts('created_at').notNull().defaultNow(),

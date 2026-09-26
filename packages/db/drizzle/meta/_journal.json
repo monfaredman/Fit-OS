@@ -29,6 +29,13 @@
       "when": 1789454071103,
       "tag": "0003_drawer_close",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789454072103,
+      "tag": "0004_device_pairing",
+      "breakpoints": true
     }
   ]
 }
